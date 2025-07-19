@@ -1,0 +1,3 @@
+.venv
+# for pretrained yolo model
+*.pt

@@ -1,0 +1,8 @@
+opencv-python
+-Official Docs: https://docs.opencv.org/4.x/
+-Python package page (PyPI): https://pypi.org/project/opencv-python/
+
+
+ultralytics
+=Official Docs: https://docs.ultralytics.com
+=Python package page (PyPI): https://pypi.org/project/ultralytics/
