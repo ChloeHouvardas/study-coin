@@ -5,6 +5,7 @@ const {
   stopMining,
   getEarningsSoFar,
   getCulmTransactions,
+  getHashrate,
 } = require("./mining");
 
 const app = express();
@@ -27,6 +28,10 @@ app.get("/earnings", (req, res) => {
   res.json({ estimated_usd: earnings });
 });
 
+app.get("/hashrate", (req, res) => {
+  res.json({ hashrate_hs: getHashrate() });
+});
+
 app.get("/transactions", (req, res) => {
   const txns = getCulmTransactions();
   res.json({ culumative_txns: txns });
@@ -44,8 +49,9 @@ wss.on("connection", (ws) => {
   const interval = setInterval(() => {
     const earnings = getEarningsSoFar();
     const txns = getCulmTransactions();
+    const hashRate = getHashrate();
 
-    ws.send(JSON.stringify({ usd: earnings, txns }));
+    ws.send(JSON.stringify({ usd: earnings, txns, hashRate: hashRate }));
 
     if (ws.readyState !== ws.OPEN) {
       clearInterval(interval);
