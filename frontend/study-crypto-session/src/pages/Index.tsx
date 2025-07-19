@@ -258,7 +258,7 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
 
         <div className="grid lg:grid-cols-3 gap-8 mb-8">
           {/* Advanced Stats */}
-          <div className="lg:col-span-2">
+          {/* <div className="lg:col-span-2">
             <Card className="p-6 bg-card/50 border-2 border-cyber-blue/20 backdrop-blur-sm">
               <h3 className="text-xl font-bold mb-6 text-cyber-blue">Mining Performance</h3>
               <div className="grid md:grid-cols-3 gap-4">
@@ -279,16 +279,15 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
                 </div>
               </div>
             </Card>
-          </div>
+          </div> */}
 
           {/* Achievements */}
-          <Card className="p-6 bg-card/50 border-2 border-neon-green/20 backdrop-blur-sm">
+          {/* <Card className="p-6 bg-card/50 border-2 border-neon-green/20 backdrop-blur-sm">
             <h3 className="text-xl font-bold mb-6 text-neon-green">Recent Achievements</h3>
             <div className="space-y-3">
               {[
                 { icon: Trophy, title: "Study Streak", desc: "7 days in a row", color: "text-neon-green" },
                 { icon: Target, title: "Focus Master", desc: "95%+ accuracy", color: "text-cyber-blue" },
-                { icon: Award, title: "Early Bird", desc: "5 AM sessions", color: "text-neon-green" }
               ].map((achievement, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-cyber-blue/10 bg-background/20">
                   <achievement.icon className={`h-5 w-5 ${achievement.color}`} />
@@ -299,7 +298,7 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
                 </div>
               ))}
             </div>
-          </Card>
+          </Card> */}
         </div>
 
         {/* Friends Section */}

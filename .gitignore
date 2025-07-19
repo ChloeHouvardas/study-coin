@@ -3,3 +3,5 @@
 *.pt
 # Store discord webhook
 .env
+
+miner/node_modules/
