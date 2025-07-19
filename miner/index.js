@@ -1,4 +1,5 @@
 const express = require("express");
+const { WebSocketServer } = require("ws");
 const {
   startMining,
   stopMining,
@@ -33,4 +34,26 @@ app.get("/transactions", (req, res) => {
 
 app.listen(3001, () => {
   console.log("Miner backend running at http://localhost:3001");
+});
+
+const wss = new WebSocketServer({ port: 3002 });
+
+wss.on("connection", (ws) => {
+  console.log("Websocket client connected");
+
+  const interval = setInterval(() => {
+    const earnings = getEarningsSoFar();
+    const txns = getCulmTransactions();
+
+    ws.send(JSON.stringify({ usd: earnings, txns }));
+
+    if (ws.readyState !== ws.OPEN) {
+      clearInterval(interval);
+    }
+  }, 1000);
+
+  ws.on("close", () => {
+    console.log("Websocket client disconnected");
+    clearInterval(interval);
+  });
 });
