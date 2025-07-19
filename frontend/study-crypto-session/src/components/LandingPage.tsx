@@ -65,21 +65,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
             </Button>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto">
-            {[
-              { icon: Users, value: "10K+", label: "Active Miners" },
-              { icon: Clock, value: "50M+", label: "Study Hours" },
-              { icon: Coins, value: "$2M+", label: "Crypto Earned" },
-              { icon: Target, value: "95%", label: "Focus Accuracy" }
-            ].map((stat, i) => (
-              <div key={i} className="text-center p-4 rounded-lg border border-cyber-blue/20 bg-card/50 backdrop-blur-sm hover:border-cyber-blue/40 transition-all duration-300">
-                <stat.icon className="h-6 w-6 text-neon-green mx-auto mb-2" />
-                <div className="text-2xl font-bold text-cyber-blue">{stat.value}</div>
-                <div className="text-sm text-foreground/60">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+        
         </div>
       </section>
 
@@ -152,10 +138,6 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
               Start Mining Now
             </Button>
             
-            <div className="flex items-center gap-2 text-sm text-foreground/60">
-              <Star className="h-4 w-4 text-neon-green fill-current" />
-              <span>Trusted by 10,000+ students</span>
-            </div>
           </div>
         </div>
       </section>
@@ -167,7 +149,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
             <div className="flex items-center justify-center gap-3 mb-6">
               <Coins className="h-8 w-8 text-cyber-blue" />
               <span className="text-2xl font-bold">
-                Study<span className="text-neon-green">Miner</span>
+                Study<span className="text-neon-green">Coin</span>
               </span>
             </div>
             

@@ -124,14 +124,12 @@ def start_session(payload):
 def end_session(payload):
     auth0_id = payload["sub"]
     data = request.get_json()
-    expired = data.get("expired", False)  # fallback to False
+    expired = data.get("expired", False)
 
-    # Get session from memory
     session_data = active_sessions.pop(auth0_id, None)
     if not session_data:
         return jsonify({"error": "No active session found"}), 404
 
-    # Get mining data
     try:
         earnings_resp = requests.get(f"{MINING_NODE_URL}/earnings")
         hashrate_resp = requests.get(f"{MINING_NODE_URL}/hashrate")
@@ -152,14 +150,14 @@ def end_session(payload):
     except Exception as e:
         return jsonify({"error": "Failed to fetch mining stats", "details": str(e)}), 500
 
-    # Get user ID from Supabase
-    user_resp = supabase.table("users").select("id").eq("auth0_id", auth0_id).execute()
+    user_resp = supabase.table("users").select("id", "amount").eq("auth0_id", auth0_id).execute()
     if not user_resp.data:
         return jsonify({"error": "User not found"}), 404
 
-    user_id = user_resp.data[0]["id"]
+    user_data = user_resp.data[0]
+    user_id = user_data["id"]
+    before_amount = user_data.get("amount", 0) or 0
 
-    # Save session to Supabase
     result = supabase.table("sessions").insert({
         "user": user_id,
         "start_time": session_data["start_time"],
@@ -168,11 +166,22 @@ def end_session(payload):
         "avg_hash_rate": avg_hashrate,
         "success": expired
     }).execute()
-    print("Supabase insert result:", result)
+
     if not result.data:
         return jsonify({"error": "Failed to save session"}), 500
 
+    # ✅ Update amount only if session is successful
+    print(expired)
+    if expired:
+        new_amount = before_amount + mined_amount
+
+        supabase.table("users").update({"amount": new_amount}).eq("id", user_id).execute()
+
+        print(f"💰 Updated user {user_id}: before = {before_amount:.4f}, mined = {mined_amount:.4f}, after = {new_amount:.4f}")
+
     return jsonify({ "message": "Session saved" })
+
+
 
 @app.route("/api/wallet-info", methods=["GET"])
 @requires_auth
