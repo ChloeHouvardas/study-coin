@@ -1,0 +1,2 @@
+TODO figure out where to store images/if need to store at all
+send automatically without storing?
