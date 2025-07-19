@@ -21,7 +21,7 @@ export default function LandingPage({ onLogin }: LandingPageProps) {
         <div className="flex items-center gap-3">
           <Coins className="h-8 w-8 text-cyber-blue" />
           <h1 className="text-3xl font-bold">
-            Study<span className="text-neon-green">Miner</span>
+            Study<span className="text-neon-green">Coin</span>
           </h1>
         </div>
         <Button 

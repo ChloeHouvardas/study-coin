@@ -1,5 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LandingPage from '@/components/LandingPage';
 import StudySession from '@/components/StudySession';
 import { Button } from '@/components/ui/button';
@@ -25,16 +25,29 @@ import {
 } from 'lucide-react';
 
 const Index = () => {
-  const { loginWithRedirect, logout, isAuthenticated, isLoading, user } = useAuth0();
+  const { loginWithRedirect, logout, isAuthenticated, isLoading, user, getAccessTokenSilently } = useAuth0();
   const [currentView, setCurrentView] = useState<'dashboard' | 'study'>('dashboard');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('today');
+  const [statsData, setStatsData] = useState<any>(null);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        const res = await fetch('http://127.0.0.1:5000/api/user-stats', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        setStatsData(data);
+        console.log("Fetched stats:", data);
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      }
+    };
 
-  console.log("AUTH DEBUG", {
-    isLoading,
-    isAuthenticated,
-    user
-  });
-
+    if (isAuthenticated) fetchStats();
+  }, [isAuthenticated]);
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -98,14 +111,22 @@ const Index = () => {
     }
   };
 
-  const currentData = timeframeData[selectedTimeframe];
+
+const fallbackData = {
+  studyTime: '00:00:00',
+  btcMined: '0.00000000',
+  usdValue: '$0.00',
+  focusScore: '0%',
+  sessions: 0,
+  efficiency: '0%'
+};
+
+const currentData = statsData?.[selectedTimeframe] || fallbackData;
 
   const friends = [
-    { name: 'Alex Chen', avatar: '👨‍💻', studyTime: '45.2h', earnings: '0.00028k BTC', rank: 1, isOnline: true },
-    { name: 'Sarah Kim', avatar: '👩‍🎓', studyTime: '42.8h', earnings: '0.00025k BTC', rank: 2, isOnline: true },
-    { name: 'Mike Johnson', avatar: '👨‍🔬', studyTime: '38.5h', earnings: '0.00023k BTC', rank: 3, isOnline: false },
-    { name: 'Emma Wilson', avatar: '👩‍💼', studyTime: '35.1h', earnings: '0.00021k BTC', rank: 4, isOnline: true },
-    { name: 'David Lee', avatar: '👨‍🎨', studyTime: '32.9h', earnings: '0.00019k BTC', rank: 5, isOnline: false }
+    { name: 'Simon Risk', avatar: '👨‍💻', studyTime: '45.2h', earnings: '0.00028k XMR', rank: 1, isOnline: true },
+    { name: 'Chloe Houvardas', avatar: '👩‍🎓', studyTime: '42.8h', earnings: '0.00025k XMR', rank: 2, isOnline: true },
+    { name: 'Nicole Steiner', avatar: '👩‍💼', studyTime: '35.1h', earnings: '0.00021k XMR', rank: 4, isOnline: true },
   ];
 
   return (
@@ -122,7 +143,7 @@ const Index = () => {
         <div className="flex items-center gap-3">
           <Coins className="h-8 w-8 text-cyber-blue animate-pulse" />
           <h1 className="text-3xl font-bold">
-            Study<span className="text-neon-green">Miner</span>
+            Study<span className="text-neon-green">Coin</span>
           </h1>
         </div>
         
@@ -195,7 +216,7 @@ const Index = () => {
           {/* BTC Mined */}
           <Card className="p-6 bg-card/50 border-2 border-neon-green/20 hover:border-neon-green/40 transition-all duration-300 hover:shadow-glow-green backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-neon-green">BTC Mined</h3>
+              <h3 className="text-lg font-semibold text-neon-green">XMR Mined</h3>
               <Coins className="h-6 w-6 text-neon-green" />
             </div>
             <div className="text-3xl font-bold text-neon-green">
@@ -207,9 +228,9 @@ const Index = () => {
           </Card>
 
           {/* Focus Score */}
-          <Card className="p-6 bg-card/50 border-2 border-border hover:border-cyber-blue/40 transition-all duration-300 backdrop-blur-sm">
+          <Card className="p-6 bg-card/50 border-2 border-cyber-blue/20 hover:border-cyber-blue/40 transition-all duration-300 hover:shadow-glow-cyan backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Focus Score</h3>
+              <h3 className="text-lg font-semibold text-cyber-blue">Focus Score</h3>
               <Brain className="h-6 w-6 text-cyber-blue" />
             </div>
             <div className="text-3xl font-bold text-cyber-blue">
@@ -221,9 +242,9 @@ const Index = () => {
           </Card>
 
           {/* Mining Efficiency */}
-          <Card className="p-6 bg-card/50 border-2 border-border hover:border-neon-green/40 transition-all duration-300 backdrop-blur-sm">
+          <Card className="p-6 bg-card/50 border-2 border-neon-green/20 hover:border-neon-green/40 transition-all duration-300 hover:shadow-glow-green backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Efficiency</h3>
+              <h3 className="text-lg font-semibold text-neon-green">Efficiency</h3>
               <TrendingUp className="h-6 w-6 text-neon-green" />
             </div>
             <div className="text-3xl font-bold text-neon-green">
