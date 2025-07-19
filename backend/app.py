@@ -174,6 +174,29 @@ def end_session(payload):
 
     return jsonify({ "message": "Session saved" })
 
+@app.route("/api/wallet-info", methods=["GET"])
+@requires_auth
+def get_wallet_info(payload):
+    auth0_id = payload["sub"]
+    user = supabase.table("users").select("wallet", "amount").eq("auth0_id", auth0_id).execute()
+    if not user.data:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({
+        "wallet": user.data[0].get("wallet", ""),
+        "balance": user.data[0].get("amount", "0.00")
+    })
+
+@app.route("/api/update-wallet", methods=["POST"])
+@requires_auth
+def update_wallet(payload):
+    auth0_id = payload["sub"]
+    data = request.get_json()
+    wallet = data.get("wallet")
+    if not wallet:
+        return jsonify({"error": "No wallet provided"}), 400
+    supabase.table("users").update({"wallet": wallet}).eq("auth0_id", auth0_id).execute()
+    return jsonify({"message": "Wallet updated"})
+
 
 
 if __name__ == "__main__":
