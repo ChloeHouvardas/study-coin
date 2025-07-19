@@ -21,29 +21,38 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
 
   useEffect(() => {
     // Request camera and microphone permissions
-    const requestPermissions = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: true, 
-          audio: true 
+const requestPermissions = async () => {
+  try {
+    // Check camera permission
+    const cameraPerm = await navigator.permissions.query({ name: "camera" as PermissionName });
+    const micPerm = await navigator.permissions.query({ name: "microphone" as PermissionName });
+
+    setCameraPermission(cameraPerm.state as "granted" | "denied" | "prompt");
+    setMicPermission(micPerm.state as "granted" | "denied" | "prompt");
+
+    if (cameraPerm.state === "granted" && micPerm.state === "granted") {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      streamRef.current = stream;
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch((e) => {
+          console.error("Auto-play failed:", e);
         });
-        
-        setCameraPermission('granted');
-        setMicPermission('granted');
-        streamRef.current = stream;
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch((e) => {
-            console.error("Auto-play failed:", e);
-          });
-        }
-      } catch (error) {
-        console.error('Permission denied:', error);
-        setCameraPermission('denied');
-        setMicPermission('denied');
       }
-    };
+    }
+
+    // Listen to permission changes (optional but helpful)
+    cameraPerm.onchange = () => setCameraPermission(cameraPerm.state as any);
+    micPerm.onchange = () => setMicPermission(micPerm.state as any);
+
+  } catch (error) {
+    console.error("Permission check or media access failed:", error);
+    setCameraPermission("denied");
+    setMicPermission("denied");
+  }
+};
+
 
     requestPermissions();
 
