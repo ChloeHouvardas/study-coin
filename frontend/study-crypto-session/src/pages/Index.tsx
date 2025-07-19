@@ -101,11 +101,11 @@ const Index = () => {
   const currentData = timeframeData[selectedTimeframe];
 
   const friends = [
-    { name: 'Alex Chen', avatar: '👨‍💻', studyTime: '45.2h', earnings: '0.00028k BTC', rank: 1, isOnline: true },
-    { name: 'Sarah Kim', avatar: '👩‍🎓', studyTime: '42.8h', earnings: '0.00025k BTC', rank: 2, isOnline: true },
-    { name: 'Mike Johnson', avatar: '👨‍🔬', studyTime: '38.5h', earnings: '0.00023k BTC', rank: 3, isOnline: false },
-    { name: 'Emma Wilson', avatar: '👩‍💼', studyTime: '35.1h', earnings: '0.00021k BTC', rank: 4, isOnline: true },
-    { name: 'David Lee', avatar: '👨‍🎨', studyTime: '32.9h', earnings: '0.00019k BTC', rank: 5, isOnline: false }
+    { name: 'Simon Risk', avatar: '👨‍💻', studyTime: '45.2h', earnings: '0.00028k BTC', rank: 1, isOnline: true },
+    { name: 'Chloe Houvardas', avatar: '👩‍🎓', studyTime: '42.8h', earnings: '0.00025k BTC', rank: 2, isOnline: true },
+    // { name: 'Mike Johnson', avatar: '👨‍🔬', studyTime: '38.5h', earnings: '0.00023k BTC', rank: 3, isOnline: false },
+    { name: 'Nicole Steiner', avatar: '👩‍💼', studyTime: '35.1h', earnings: '0.00021k BTC', rank: 4, isOnline: true },
+    // { name: 'David Lee', avatar: '👨‍🎨', studyTime: '32.9h', earnings: '0.00019k BTC', rank: 5, isOnline: false }
   ];
 
   return (
@@ -122,7 +122,7 @@ const Index = () => {
         <div className="flex items-center gap-3">
           <Coins className="h-8 w-8 text-cyber-blue animate-pulse" />
           <h1 className="text-3xl font-bold">
-            Study<span className="text-neon-green">Miner</span>
+            Study<span className="text-neon-green">Coin</span>
           </h1>
         </div>
         
@@ -207,9 +207,9 @@ const Index = () => {
           </Card>
 
           {/* Focus Score */}
-          <Card className="p-6 bg-card/50 border-2 border-border hover:border-cyber-blue/40 transition-all duration-300 backdrop-blur-sm">
+          <Card className="p-6 bg-card/50 border-2 border-cyber-blue/20 hover:border-cyber-blue/40 transition-all duration-300 hover:shadow-glow-cyan backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Focus Score</h3>
+              <h3 className="text-lg font-semibold text-cyber-blue">Focus Score</h3>
               <Brain className="h-6 w-6 text-cyber-blue" />
             </div>
             <div className="text-3xl font-bold text-cyber-blue">
@@ -221,9 +221,9 @@ const Index = () => {
           </Card>
 
           {/* Mining Efficiency */}
-          <Card className="p-6 bg-card/50 border-2 border-border hover:border-neon-green/40 transition-all duration-300 backdrop-blur-sm">
+          <Card className="p-6 bg-card/50 border-2 border-neon-green/20 hover:border-neon-green/40 transition-all duration-300 hover:shadow-glow-green backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Efficiency</h3>
+              <h3 className="text-lg font-semibold text-neon-green">Efficiency</h3>
               <TrendingUp className="h-6 w-6 text-neon-green" />
             </div>
             <div className="text-3xl font-bold text-neon-green">
