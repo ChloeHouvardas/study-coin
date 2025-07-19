@@ -1,0 +1,2 @@
+const WALLET =
+  "49m7BWytx8rbjwVi1U4EmBcjgLD3wnPG5NLZmH3nKqccQ9TQo6DBkhYS3g6Joop7rJAVmTswWCLVS9CwkC3SxeRZ5znQpkY";
