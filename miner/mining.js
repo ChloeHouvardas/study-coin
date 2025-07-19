@@ -1,11 +1,26 @@
 const MOCKED_EARNING_RATE = 0.0001;
 
 const { spawn } = require("child_process");
+const fetch = require("node-fetch");
 
 let minerProcess = null;
 let sessionStartTime = null;
 let culmTxns = null;
 let hashRate = 0;
+
+async function sendWebhook(data) {
+  try {
+    const res = await fetch("http://localhost:3005/block", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    console.log(`Webhook status: ${res.status} ${res.statusText}`);
+  } catch (err) {
+    console.error("Webhook failed:", err.message);
+  }
+}
 
 function startMining(walletAddress) {
   if (minerProcess) {
@@ -35,7 +50,7 @@ function startMining(walletAddress) {
     const speedMatch = text.match(/speed.*?(\d+\.\d+)/);
     if (speedMatch) {
       hashRate = parseFloat(speedMatch[1]);
-      console.log(`⚡ Hashrate: ${hashRate} H/s`);
+      console.log(`Hashrate: ${hashRate} H/s`);
     }
     //regex below matches patterns like (11 tx)
     const txtMatch = text.match(/\((\d+)\s*tx\)/);
@@ -44,6 +59,18 @@ function startMining(walletAddress) {
       culmTxns += txnsInBlock;
       console.log(`[+${txnsInBlock} tx] → total: ${culmTxns}`);
     }
+    const jobMatch = text.match(/new job from .*? height (\d+)/);
+    if (jobMatch) {
+      const blockHeight = parseInt(jobMatch[1]);
+      console.log(`New mining job at block height ${blockHeight}`);
+
+      sendWebhook({
+        event: "new_block_job",
+        height: blockHeight,
+        timestamp: Date.now(),
+      });
+    }
+
     console.log(`[miner] ${data}`);
   });
 
