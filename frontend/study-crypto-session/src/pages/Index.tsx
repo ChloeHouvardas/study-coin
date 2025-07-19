@@ -30,6 +30,28 @@ const Index = () => {
   const [selectedTimeframe, setSelectedTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('today');
   const [statsData, setStatsData] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [availableBalance, setAvailableBalance] = useState("0.00");
+
+  useEffect(() => {
+    const fetchWalletInfo = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        const res = await fetch('http://127.0.0.1:5000/api/wallet-info', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        setWalletAddress(data.wallet || "");
+        setAvailableBalance(data.balance || "0.00");
+      } catch (err) {
+        console.error("Failed to fetch wallet info:", err);
+      }
+    };
+
+    if (isAuthenticated) fetchWalletInfo();
+  }, [isAuthenticated]);
 useEffect(() => {
   const fetchStats = async () => {
     setLoadingStats(true); // start loader
@@ -302,50 +324,50 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Advanced Stats */}
-          {/* <div className="lg:col-span-2">
-            <Card className="p-6 bg-card/50 border-2 border-cyber-blue/20 backdrop-blur-sm">
-              <h3 className="text-xl font-bold mb-6 text-cyber-blue">Mining Performance</h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-lg border border-cyber-blue/20 bg-background/30">
-                  <Activity className="h-6 w-6 text-neon-green mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-neon-green">127.3 H/s</div>
-                  <div className="text-sm text-foreground/60">Avg Hash Rate</div>
-                </div>
-                <div className="text-center p-4 rounded-lg border border-cyber-blue/20 bg-background/30">
-                  <Flame className="h-6 w-6 text-cyber-blue mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-cyber-blue">98.2%</div>
-                  <div className="text-sm text-foreground/60">Uptime</div>
-                </div>
-                <div className="text-center p-4 rounded-lg border border-cyber-blue/20 bg-background/30">
-                  <Shield className="h-6 w-6 text-neon-green mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-neon-green">A+</div>
-                  <div className="text-sm text-foreground/60">Security Rating</div>
-                </div>
-              </div>
-            </Card>
-          </div> */}
-
-          {/* Achievements */}
-          {/* <Card className="p-6 bg-card/50 border-2 border-neon-green/20 backdrop-blur-sm">
-            <h3 className="text-xl font-bold mb-6 text-neon-green">Recent Achievements</h3>
-            <div className="space-y-3">
-              {[
-                { icon: Trophy, title: "Study Streak", desc: "7 days in a row", color: "text-neon-green" },
-                { icon: Target, title: "Focus Master", desc: "95%+ accuracy", color: "text-cyber-blue" },
-              ].map((achievement, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-cyber-blue/10 bg-background/20">
-                  <achievement.icon className={`h-5 w-5 ${achievement.color}`} />
-                  <div>
-                    <div className="font-semibold text-sm">{achievement.title}</div>
-                    <div className="text-xs text-foreground/60">{achievement.desc}</div>
-                  </div>
-                </div>
-              ))}
+        <Card className="p-6 mt-6 bg-card/50 border-2 border-cyber-blue/20 backdrop-blur-sm">
+          <h3 className="text-xl font-bold text-cyber-blue mb-4">Wallet</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-foreground/80 mb-1 block">Wallet Address</label>
+              <input
+                type="text"
+                value={walletAddress}
+                onChange={(e) => setWalletAddress(e.target.value)}
+                placeholder="Enter your XMR wallet address"
+                className="w-full px-3 py-2 border rounded-md bg-background border-cyber-blue/20"
+              />
             </div>
-          </Card> */}
-        </div>
+            <div>
+              <label className="text-sm font-medium text-foreground/80 mb-1 block">Available to Withdraw</label>
+              <div className="text-xl font-bold text-neon-green mt-2">
+                {availableBalance} XMR
+              </div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Button 
+              onClick={async () => {
+                try {
+                  const token = await getAccessTokenSilently();
+                  await fetch('http://127.0.0.1:5000/api/update-wallet', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ wallet: walletAddress }),
+                  });
+                  alert("Wallet updated!");
+                } catch (err) {
+                  console.error("Failed to update wallet:", err);
+                }
+              }}
+            >
+              Save Wallet Address
+            </Button>
+          </div>
+        </Card>
+
 
         {/* Friends Section */}
         <Card className="p-6 mt-4 bg-card/50 border-2 border-cyber-blue/20 backdrop-blur-sm">
