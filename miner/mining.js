@@ -1,12 +1,17 @@
+const MOCKED_EARNING_RATE = 0.0001;
+
 const { spawn } = require("child_process");
 
 let minerProcess = null;
+let sessionStartTime = null;
 
 function startMining(walletAddress) {
   if (minerProcess) {
     console.log("Miner already running");
     return;
   }
+
+  sessionStartTime = Date.now();
 
   minerProcess = spawn("./xmrig", [
     "-o",
@@ -32,6 +37,7 @@ function startMining(walletAddress) {
   minerProcess.on("exit", () => {
     console.log("Miner stopped");
     minerProcess = null;
+    sessionStartTime = null;
   });
 }
 
@@ -40,9 +46,20 @@ function stopMining() {
     minerProcess.kill("SIGINT");
     console.log("Mining stopped via Node");
     minerProcess = null;
+    sessionStartTime = null;
   } else {
     console.log("Miner is not running.");
   }
 }
 
-module.exports = { startMining, stopMining };
+function getEarningsSoFar() {
+  if (!sessionStartTime) return 0;
+
+  const elapsedSeconds = (Date.now() - sessionStartTime) / 1000;
+
+  const earningsUsd = elapsedSeconds * MOCKED_EARNING_RATE;
+
+  return earningsUsd.toFixed(6);
+}
+
+module.exports = { startMining, stopMining, getEarningsSoFar };
