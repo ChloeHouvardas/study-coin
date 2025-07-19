@@ -7,6 +7,8 @@ import time
 import tkinter as tk
 from tkinter import messagebox
 
+# TODO SEPERATE LOGIC INTO DIFFERENT CLASSES
+
 # Load YOLOv8 model
 # NOTE this is the smallest model, least accurate but runs best
 model = YOLO('yolov8n.pt')
@@ -42,6 +44,18 @@ def show_popup():
     root.withdraw()  # Hide main window
     messagebox.showwarning("Study goal failed!")
     root.destroy()
+
+def take_photo(frame, folder="photos"):
+    """
+    Saves a pic image from the webcam frame to a file.
+    Creates the folder if it doesn't exist.
+    """
+    os.makedirs(folder, exist_ok=True)
+    timestamp = int(time.time())
+    filename = os.path.join(folder, f"distraction_capture_{timestamp}.jpg")
+    cv2.imwrite(filename, frame)
+    print(f"Image saved to: {filename}")
+
 
 # TODO make the time threshold dynamic
 not_studying_start_time = None
@@ -90,6 +104,7 @@ while True:
         elapsed = time.time() - not_studying_start_time
         countdown = max(0, int(not_studying_threshold - elapsed))
         if elapsed >= not_studying_threshold:
+            take_photo(frame)  # save photo before releasing webcam
             cap.release()
             cv2.destroyAllWindows()
             show_popup()
