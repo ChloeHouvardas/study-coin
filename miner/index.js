@@ -1,5 +1,10 @@
 const express = require("express");
-const { startMining, stopMining, getEarningsSoFar } = require("./mining");
+const {
+  startMining,
+  stopMining,
+  getEarningsSoFar,
+  getCulmTransactions,
+} = require("./mining");
 
 const app = express();
 app.use(express.json());
@@ -19,6 +24,11 @@ app.post("/end-session", (req, res) => {
 app.get("/earnings", (req, res) => {
   const earnings = getEarningsSoFar();
   res.json({ estimated_usd: earnings });
+});
+
+app.get("/transactions", (req, res) => {
+  const txns = getCulmTransactions();
+  res.json({ culumative_txns: txns });
 });
 
 app.listen(3001, () => {
