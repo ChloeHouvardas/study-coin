@@ -16,9 +16,9 @@ async function sendWebhook(data) {
       body: JSON.stringify(data),
     });
 
-    console.log(`📡 Webhook status: ${res.status} ${res.statusText}`);
+    console.log(`Webhook status: ${res.status} ${res.statusText}`);
   } catch (err) {
-    console.error("❌ Webhook failed:", err.message);
+    console.error("Webhook failed:", err.message);
   }
 }
 
