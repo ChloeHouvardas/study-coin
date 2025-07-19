@@ -41,7 +41,7 @@ def get_user_stats(user_id, start_time, end_time):
     efficiency = f"{(total_mined / (total_study_seconds / 3600)):.1%}" if total_study_seconds else "0%"
 
     XMR_USD_RATE = 140  # Update to current XMR price or fetch dynamically
-    usd_value = f"${(total_mined * XMR_USD_RATE):.2f}"
+    usd_value = f"${(total_mined / XMR_USD_RATE)}"
 
     return {
         "studyTime": study_time_str,
@@ -144,6 +144,8 @@ def end_session(payload):
         try:
             r = requests.post(f"{MINING_NODE_URL}/end-session")
             r.raise_for_status()
+            print(r.json())
+            print("Session ended successfully")
         except Exception as e:
             return jsonify({"error": "Failed to stop mining process", "details": str(e)}), 500
 
