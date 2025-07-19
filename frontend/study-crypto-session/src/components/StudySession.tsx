@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { useEffect, useState, useRef } from "react";
 import { Camera, Mic, Square, Play, AlertTriangle, CheckCircle } from "lucide-react";
 import Dashboard from "./Dashboard";
+import { useAuth0 } from "@auth0/auth0-react";
 
 interface StudySessionProps {
   onEndSession: () => void;
@@ -17,6 +18,9 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
   const [videoReady, setVideoReady] = useState(false);
   const [sessionDuration, setSessionDuration] = useState(60);
   const [cpuPercentage, setCpuPercentage] = useState(50);
+  const { getAccessTokenSilently, isAuthenticated } = useAuth0();
+  const [accessToken, setAccessToken] = useState("");
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -67,22 +71,95 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
     return () => clearInterval(focusInterval);
   }, [isRecording]);
 
-  const startSession = () => {
-    if (cameraPermission !== 'granted' || micPermission !== 'granted') {
-      alert('Camera and microphone permissions are required.');
-      return;
+  useEffect(() => {
+  const fetchToken = async () => {
+    try {
+      const token = await getAccessTokenSilently();
+      setAccessToken(token);
+    } catch (err) {
+      console.error("Failed to get access token", err);
     }
-    setIsRecording(true);
-    setSessionStartTime(new Date());
-    setFocusStatus('analyzing');
   };
 
-  const endSession = () => {
-    setIsRecording(false);
-    setSessionStartTime(null);
-    setFocusStatus('analyzing');
-    onEndSession();
-  };
+  if (isAuthenticated) {
+    fetchToken();
+  }
+}, [getAccessTokenSilently, isAuthenticated]);
+
+const startSession = async () => {
+  if (cameraPermission !== 'granted' || micPermission !== 'granted') {
+    alert('Camera and microphone permissions are required.');
+    return;
+  }
+
+  try {
+    const res = await fetch("http://127.0.0.1:5000/api/start-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        cpuPercentage,
+        sessionDuration,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.error('Failed to start session:', errorData);
+      alert('Failed to start session. Please try again.');
+      return;
+    }
+  } catch (err) {
+    console.error('Failed to start session:', err);
+    alert('An error occurred while starting the session.');
+    return;
+  }
+
+  setIsRecording(true);
+  const start = new Date();
+  setSessionStartTime(start);
+  setFocusStatus('analyzing');
+
+  // Automatically end session when timer expires
+  timeoutRef.current = setTimeout(() => {
+    console.log("Session expired – auto-ending.");
+    endSession(true); // mark as expired
+  }, sessionDuration * 60 * 1000); // convert minutes to ms
+};
+
+
+const endSession = async (expired = false) => {
+  if (timeoutRef.current) {
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+  }
+
+  try {
+    await fetch("http://127.0.0.1:5000/api/end-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        expired,
+        startTime: sessionStartTime?.toISOString(),
+      }),
+    });
+  } catch (err) {
+    console.error('Failed to end session:', err);
+  }
+
+  setIsRecording(false);
+  setSessionStartTime(null);
+  setFocusStatus('analyzing');
+  onEndSession();
+};
+
+
+
 
   return (
     <div className="min-h-screen bg-gradient-dark p-6 relative">
