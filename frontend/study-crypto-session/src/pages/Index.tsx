@@ -86,7 +86,7 @@ const Index = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Focus Score</span>
-                <span className="font-mono text-electric-purple">92%</span>
+                <span className="font-mono text-cyber-blue">92%</span>
               </div>
             </div>
           </Card>

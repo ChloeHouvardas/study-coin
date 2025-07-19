@@ -2,113 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* StudyMiner Design System - Gaming/Crypto Aesthetic */
+/* StudyMiner Design System - Enhanced Cyberpunk/Neon Aesthetic */
 
 @layer base {
   :root {
-    /* Dark gaming theme */
-    --background: 222 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Background and text - Deep blacks with subtle blue tints */
+    --background: 200 50% 2%;
+    --foreground: 180 100% 85%;
 
-    --card: 222 84% 6%;
-    --card-foreground: 210 40% 98%;
+    --card: 200 50% 4%;
+    --card-foreground: 180 100% 90%;
 
-    --popover: 222 84% 6%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 200 50% 4%;
+    --popover-foreground: 180 100% 90%;
 
-    /* Cyber blue primary */
-    --primary: 193 75% 59%;
-    --primary-foreground: 222 84% 4.9%;
+    /* Electric cyan primary */
+    --primary: 180 100% 50%; 
+    --primary-foreground: 200 50% 2%;
 
-    /* Dark secondary */
-    --secondary: 215 32% 17%;
-    --secondary-foreground: 210 40% 98%;
+    /* Electric green secondary */
+    --secondary: 120 100% 50%; 
+    --secondary-foreground: 200 50% 2%;
 
-    --muted: 215 32% 17%;
-    --muted-foreground: 215 20% 65%;
+    /* Accent color (bright green) */
+    --accent: 120 100% 50%;
+    --accent-foreground: 200 50% 2%;
 
-    /* Neon green accent */
-    --accent: 142 76% 36%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 200 20% 15%;
+    --muted-foreground: 180 30% 60%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 100% 60%; 
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 32% 17%;
-    --input: 215 32% 17%;
-    --ring: 193 75% 59%;
+    --border: 180 100% 50%;
+    --input: 200 50% 8%;
+    --ring: 180 100% 50%;
 
-    /* Custom gaming colors */
-    --cyber-blue: 193 75% 59%;
-    --neon-green: 142 76% 36%;
-    --electric-purple: 271 81% 56%;
-    --warning-orange: 25 95% 53%;
-    
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(193 75% 59%), hsl(271 81% 56%));
-    --gradient-accent: linear-gradient(135deg, hsl(142 76% 36%), hsl(193 75% 59%));
-    --gradient-dark: linear-gradient(135deg, hsl(222 84% 4.9%), hsl(215 32% 17%));
-    
-    /* Gaming effects */
-    --glow-cyan: 0 0 20px hsl(193 75% 59% / 0.5);
-    --glow-green: 0 0 20px hsl(142 76% 36% / 0.5);
-    --shadow-gaming: 0 8px 32px hsl(222 84% 4.9% / 0.8);
+    /* Enhanced neon colors */
+    --cyber-blue: 180 100% 50%;
+    --neon-green: 120 100% 50%;
+    --electric-pink: 320 100% 60%;
+    --warning-orange: 30 100% 60%;
+    --deep-purple: 260 100% 40%;
+
+    /* Enhanced gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(180 100% 50%), hsl(120 100% 50%));
+    --gradient-accent: linear-gradient(135deg, hsl(120 100% 50%), hsl(320 100% 60%));
+    --gradient-dark: linear-gradient(135deg, hsl(200 50% 2%), hsl(200 20% 8%));
+    --gradient-cyber: linear-gradient(45deg, hsl(180 100% 50%) 0%, hsl(120 100% 50%) 50%, hsl(320 100% 60%) 100%);
+
+    /* Enhanced glows and effects */
+    --glow-cyan: 0 0 30px hsl(180 100% 50% / 0.8), 0 0 60px hsl(180 100% 50% / 0.4);
+    --glow-green: 0 0 30px hsl(120 100% 50% / 0.8), 0 0 60px hsl(120 100% 50% / 0.4);
+    --glow-pink: 0 0 30px hsl(320 100% 60% / 0.8), 0 0 60px hsl(320 100% 60% / 0.4);
+    --shadow-gaming: 0 10px 40px hsl(180 100% 50% / 0.3), 0 0 20px hsl(120 100% 50% / 0.2);
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 200 50% 3%;
+    --sidebar-foreground: 180 100% 85%;
+    --sidebar-primary: 180 100% 50%;
+    --sidebar-primary-foreground: 200 50% 2%;
+    --sidebar-accent: 120 100% 50%;
+    --sidebar-accent-foreground: 200 50% 2%;
+    --sidebar-border: 180 100% 50%;
+    --sidebar-ring: 180 100% 50%;
   }
 }
 
@@ -119,5 +78,176 @@
 
   body {
     @apply bg-background text-foreground;
+    background-image: 
+      radial-gradient(circle at 25% 25%, hsl(180 100% 50% / 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, hsl(120 100% 50% / 0.1) 0%, transparent 50%);
   }
+
+  /* Enhanced scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(200 50% 4%);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(180 100% 50%), hsl(120 100% 50%));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(180 100% 60%), hsl(120 100% 60%));
+  }
+}
+
+@layer components {
+  /* Cyber text glow effect */
+  .text-cyber-glow {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 40px currentColor;
+  }
+
+  /* Pulsing border effect */
+  .border-pulse {
+    animation: border-pulse 2s ease-in-out infinite;
+  }
+
+  /* Floating animation for hero elements */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Matrix-style text effect */
+  .text-matrix {
+    background: linear-gradient(90deg, 
+      hsl(120 100% 50%) 0%, 
+      hsl(180 100% 50%) 25%, 
+      hsl(120 100% 50%) 50%, 
+      hsl(180 100% 50%) 75%, 
+      hsl(120 100% 50%) 100%);
+    background-size: 400% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: matrix-flow 3s ease-in-out infinite;
+  }
+
+  /* Circuit board pattern overlay */
+  .bg-circuit {
+    background-image: 
+      linear-gradient(90deg, hsl(180 100% 50% / 0.1) 1px, transparent 1px),
+      linear-gradient(0deg, hsl(120 100% 50% / 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  /* Enhanced card hover effects */
+  .card-cyber-hover {
+    transition: all 0.3s ease;
+    border: 1px solid hsl(180 100% 50% / 0.3);
+  }
+
+  .card-cyber-hover:hover {
+    border-color: hsl(180 100% 50%);
+    box-shadow: var(--glow-cyan);
+    transform: translateY(-5px) scale(1.02);
+  }
+
+  /* Neon button variants */
+  .btn-neon-cyan {
+    background: linear-gradient(45deg, hsl(180 100% 50%), hsl(180 100% 60%));
+    border: 2px solid hsl(180 100% 50%);
+    box-shadow: 
+      0 0 20px hsl(180 100% 50% / 0.4),
+      inset 0 1px 0 hsl(180 100% 70%);
+    text-shadow: 0 0 10px hsl(180 100% 100%);
+  }
+
+  .btn-neon-cyan:hover {
+    box-shadow: 
+      0 0 30px hsl(180 100% 50% / 0.8),
+      0 0 60px hsl(180 100% 50% / 0.4),
+      inset 0 1px 0 hsl(180 100% 70%);
+    transform: scale(1.05);
+  }
+
+  .btn-neon-green {
+    background: linear-gradient(45deg, hsl(120 100% 50%), hsl(120 100% 60%));
+    border: 2px solid hsl(120 100% 50%);
+    box-shadow: 
+      0 0 20px hsl(120 100% 50% / 0.4),
+      inset 0 1px 0 hsl(120 100% 70%);
+    text-shadow: 0 0 10px hsl(120 100% 100%);
+  }
+
+  .btn-neon-green:hover {
+    box-shadow: 
+      0 0 30px hsl(120 100% 50% / 0.8),
+      0 0 60px hsl(120 100% 50% / 0.4),
+      inset 0 1px 0 hsl(120 100% 70%);
+    transform: scale(1.05);
+  }
+}
+
+@layer utilities {
+  /* Enhanced keyframe animations */
+  @keyframes border-pulse {
+    0%, 100% { 
+      border-color: hsl(180 100% 50% / 0.5);
+      box-shadow: 0 0 20px hsl(180 100% 50% / 0.3);
+    }
+    50% { 
+      border-color: hsl(180 100% 50%);
+      box-shadow: 0 0 40px hsl(180 100% 50% / 0.6);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    25% { transform: translateY(-10px) rotate(1deg); }
+    50% { transform: translateY(-20px) rotate(0deg); }
+    75% { transform: translateY(-10px) rotate(-1deg); }
+  }
+
+  @keyframes matrix-flow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes data-flow {
+    0% { transform: translateX(-100%); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateX(100%); opacity: 0; }
+  }
+
+  @keyframes hologram {
+    0%, 100% { 
+      opacity: 1;
+      filter: hue-rotate(0deg);
+    }
+    25% { 
+      opacity: 0.8;
+      filter: hue-rotate(90deg);
+    }
+    50% { 
+      opacity: 1;
+      filter: hue-rotate(180deg);
+    }
+    75% { 
+      opacity: 0.9;
+      filter: hue-rotate(270deg);
+    }
+  }
+
+  @keyframes scan-line {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  /* Utility classes for animations */
+  .animate-matrix-flow { animation: matrix-flow 3s ease-in-out infinite; }
+  .animate-data-flow { animation: data-flow 4s linear infinite; }
+  .animate-hologram { animation: hologram 4s ease-in-out infinite; }
+  .animate-scan-line { animation: scan-line 2s linear infinite; }
 }
