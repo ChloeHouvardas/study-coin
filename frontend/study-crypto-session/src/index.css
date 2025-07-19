@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* StudyMiner Design System - Gaming/Crypto Aesthetic */
+
+@layer base {
+  :root {
+    /* Dark gaming theme */
+    --background: 222 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 84% 6%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 84% 6%;
+    --popover-foreground: 210 40% 98%;
+
+    /* Cyber blue primary */
+    --primary: 193 75% 59%;
+    --primary-foreground: 222 84% 4.9%;
+
+    /* Dark secondary */
+    --secondary: 215 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 32% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    /* Neon green accent */
+    --accent: 142 76% 36%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 215 32% 17%;
+    --input: 215 32% 17%;
+    --ring: 193 75% 59%;
+
+    /* Custom gaming colors */
+    --cyber-blue: 193 75% 59%;
+    --neon-green: 142 76% 36%;
+    --electric-purple: 271 81% 56%;
+    --warning-orange: 25 95% 53%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(193 75% 59%), hsl(271 81% 56%));
+    --gradient-accent: linear-gradient(135deg, hsl(142 76% 36%), hsl(193 75% 59%));
+    --gradient-dark: linear-gradient(135deg, hsl(222 84% 4.9%), hsl(215 32% 17%));
+    
+    /* Gaming effects */
+    --glow-cyan: 0 0 20px hsl(193 75% 59% / 0.5);
+    --glow-green: 0 0 20px hsl(142 76% 36% / 0.5);
+    --shadow-gaming: 0 8px 32px hsl(222 84% 4.9% / 0.8);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
