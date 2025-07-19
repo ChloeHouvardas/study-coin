@@ -36,7 +36,8 @@ export default function Dashboard({ isStudying, sessionStartTime }: DashboardPro
         
         const earningsData = await earningsRes.json();
         const hashrateData = await hashrateRes.json();
-
+        console.log("Earnings Data:", earningsData);
+        console.log("Hashrate Data:", hashrateData);
         setCryptoMined(parseFloat(earningsData.estimated_usd) || 0);
         setHashRate(parseFloat(hashrateData.hashrate_hs) || 0);
       } catch (err) {

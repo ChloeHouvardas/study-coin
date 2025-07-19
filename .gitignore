@@ -5,3 +5,4 @@
 .env
 
 miner/node_modules/
+miner/xmrig

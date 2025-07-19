@@ -123,41 +123,6 @@ useEffect(() => {
     return <StudySession onEndSession={() => setCurrentView('dashboard')} />;
   }
 
-  const timeframeData = {
-    today: {
-      studyTime: '02:45:32',
-      btcMined: '0.00000234',
-      usdValue: '$0.15',
-      focusScore: '92%',
-      sessions: 3,
-      efficiency: '94.8%'
-    },
-    week: {
-      studyTime: '18:23:45',
-      btcMined: '0.00001456',
-      usdValue: '$0.92',
-      focusScore: '89%',
-      sessions: 12,
-      efficiency: '91.2%'
-    },
-    month: {
-      studyTime: '67:12:18',
-      btcMined: '0.00005234',
-      usdValue: '$3.31',
-      focusScore: '88%',
-      sessions: 45,
-      efficiency: '89.7%'
-    },
-    year: {
-      studyTime: '342:45:22',
-      btcMined: '0.00025789',
-      usdValue: '$16.32',
-      focusScore: '87%',
-      sessions: 198,
-      efficiency: '88.4%'
-    }
-  };
-
 
 const fallbackData = {
   studyTime: '00:00:00',
@@ -288,10 +253,10 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
               <Coins className="h-6 w-6 text-neon-green" />
             </div>
             <div className="text-3xl font-bold text-neon-green">
-              {currentData.btcMined}
+              $ {parseFloat(currentData.btcMined).toFixed(2)} USD
             </div>
             <p className="text-sm text-foreground/60 mt-2">
-              ≈ {currentData.usdValue} USD
+              ≈ {currentData.usdValue} XMR
             </p>
           </Card>
 
@@ -324,27 +289,43 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
           </Card>
         </div>
 
-        <Card className="p-6 mt-6 bg-card/50 border-2 border-cyber-blue/20 backdrop-blur-sm">
-          <h3 className="text-xl font-bold text-cyber-blue mb-4">Wallet</h3>
-          <div className="grid md:grid-cols-2 gap-4">
+        {/* Wallet Section */}
+        <Card className="p-6 mt-6 bg-card/50 border-2 border-cyber-blue/20 hover:border-cyber-blue/40 transition-all duration-300 hover:shadow-glow-cyan backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-cyber-blue">Mining Wallet</h3>
+            <Shield className="h-6 w-6 text-cyber-blue" />
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label className="text-sm font-medium text-foreground/80 mb-1 block">Wallet Address</label>
+              <label className="text-sm font-medium text-cyber-blue mb-2 block flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Wallet Address
+              </label>
               <input
                 type="text"
                 value={walletAddress}
                 onChange={(e) => setWalletAddress(e.target.value)}
                 placeholder="Enter your XMR wallet address"
-                className="w-full px-3 py-2 border rounded-md bg-background border-cyber-blue/20"
+                className="w-full px-4 py-3 border-2 border-cyber-blue/20 rounded-lg bg-background/50 backdrop-blur-sm text-foreground placeholder:text-foreground/40 focus:border-cyber-blue focus:outline-none focus:shadow-glow-cyan transition-all duration-300"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground/80 mb-1 block">Available to Withdraw</label>
-              <div className="text-xl font-bold text-neon-green mt-2">
-                {availableBalance} XMR
+            
+            <div className="flex flex-col justify-center">
+              <label className="text-sm font-medium text-foreground/80 mb-2 block flex items-center gap-2">
+                <Coins className="h-4 w-4 text-neon-green" />
+                Available Balance
+              </label>
+              <div className="text-3xl font-bold text-transparent bg-gradient-to-r from-neon-green to-cyber-blue bg-clip-text">
+                $ {parseFloat(availableBalance).toFixed(2)} USD
               </div>
+              <p className="text-sm text-foreground/60 mt-1">
+                Ready for withdrawal
+              </p>
             </div>
           </div>
-          <div className="mt-4">
+          
+          <div className="mt-6 flex gap-3">
             <Button 
               onClick={async () => {
                 try {
@@ -357,13 +338,25 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
                     },
                     body: JSON.stringify({ wallet: walletAddress }),
                   });
-                  alert("Wallet updated!");
+                  alert("Wallet updated successfully!");
                 } catch (err) {
                   console.error("Failed to update wallet:", err);
+                  alert("Failed to update wallet. Please try again.");
                 }
               }}
+              className="bg-gradient-to-r from-cyber-blue to-neon-green text-black font-semibold px-6 py-2 rounded-lg hover:shadow-glow-cyan transition-all duration-300 hover:scale-105"
             >
+              <Shield className="h-4 w-4 mr-2" />
               Save Wallet Address
+            </Button>
+            
+            <Button 
+              variant="outline"
+              className="border-neon-green/30 text-neon-green hover:bg-neon-green/10 hover:border-neon-green/50 transition-all duration-300"
+              disabled={parseFloat(availableBalance) === 0}
+            >
+              <Coins className="h-4 w-4 mr-2" />
+              Withdraw Funds
             </Button>
           </div>
         </Card>
