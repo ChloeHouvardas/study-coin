@@ -5,6 +5,7 @@ const { spawn } = require("child_process");
 let minerProcess = null;
 let sessionStartTime = null;
 let culmTxns = null;
+let hashRate = 0;
 
 function startMining(walletAddress) {
   if (minerProcess) {
@@ -30,11 +31,18 @@ function startMining(walletAddress) {
 
   minerProcess.stdout.on("data", (data) => {
     const text = data.toString();
+
+    const speedMatch = text.match(/speed.*?(\d+\.\d+)/);
+    if (speedMatch) {
+      hashRate = parseFloat(speedMatch[1]);
+      console.log(`⚡ Hashrate: ${hashRate} H/s`);
+    }
     //regex below matches patterns like (11 tx)
-    const match = text.match(/\((\d+)\s*tx\)/);
-    if (match) {
-      const txnsInBlock = parseInt(match[1]);
+    const txtMatch = text.match(/\((\d+)\s*tx\)/);
+    if (txtMatch) {
+      const txnsInBlock = parseInt(txtMatch[1]);
       culmTxns += txnsInBlock;
+      console.log(`[+${txnsInBlock} tx] → total: ${culmTxns}`);
     }
     console.log(`[miner] ${data}`);
   });
@@ -77,9 +85,14 @@ function getCulmTransactions() {
   return culmTxns;
 }
 
+function getHashrate() {
+  return hashRate;
+}
+
 module.exports = {
   startMining,
   stopMining,
   getEarningsSoFar,
   getCulmTransactions,
+  getHashrate,
 };
