@@ -71,7 +71,7 @@ export default function Dashboard({ isStudying, sessionStartTime }: DashboardPro
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Coins className="h-4 w-4 text-neon-green animate-pulse" />
-              <span className="text-sm font-medium">BTC Mined</span>
+              <span className="text-sm font-medium">XMR Mined</span>
             </div>
             <span className="text-sm font-mono text-neon-green">
               {cryptoMined.toFixed(8)}
