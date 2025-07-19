@@ -6,8 +6,15 @@ import cv2
 import time
 import tkinter as tk
 from tkinter import messagebox
+import requests
+from dotenv import load_dotenv
 
 # TODO SEPERATE LOGIC INTO DIFFERENT CLASSES
+# TODO add python 3 function headers
+
+# Load environment variables
+load_dotenv() 
+webhook_url = os.environ['DISCORD_WEBHOOK']
 
 # Load YOLOv8 model
 # NOTE this is the smallest model, least accurate but runs best
@@ -22,6 +29,8 @@ cap = cv2.VideoCapture(0)
 if not cap.isOpened():
     print("❌ Webcam not accessible")
     exit()
+
+
 
 # CHECKS IF LOOKING DONW
 # TODO might have to change the threshold depending on the person
@@ -45,7 +54,8 @@ def show_popup():
     messagebox.showwarning("Study goal failed!")
     root.destroy()
 
-def take_photo(frame, folder="photos"):
+# TODO take pic when the person is back in frame
+def take_photo(frame, folder="CNN/photos"):
     """
     Saves a pic image from the webcam frame to a file.
     Creates the folder if it doesn't exist.
@@ -55,7 +65,27 @@ def take_photo(frame, folder="photos"):
     filename = os.path.join(folder, f"distraction_capture_{timestamp}.jpg")
     cv2.imwrite(filename, frame)
     print(f"Image saved to: {filename}")
+    return filename
+    
+def send_evidence_to_discord(webhook_url, message, image_path=None):
+    """
+    Sends a message (and optional image) to a Discord channel via webhook.
+    """
+    data = {
+        "content": message
+    }
 
+    files = {}
+    if image_path and os.path.exists(image_path):
+        files["file"] = (os.path.basename(image_path), open(image_path, "rb"))
+
+    response = requests.post(webhook_url, data=data, files=files)
+    
+    valid_responses = [204, 200]
+    if response.status_code in valid_responses:
+        print("✅ Discord message sent successfully.")
+    else:
+        print(f"❌ Failed to send Discord message: {response.status_code}")
 
 # TODO make the time threshold dynamic
 not_studying_start_time = None
@@ -104,7 +134,15 @@ while True:
         elapsed = time.time() - not_studying_start_time
         countdown = max(0, int(not_studying_threshold - elapsed))
         if elapsed >= not_studying_threshold:
-            take_photo(frame)  # save photo before releasing webcam
+            filename = take_photo(frame)  # save photo before releasing webcam
+
+            send_evidence_to_discord(
+            webhook_url=webhook_url,
+            message="🚨 The user has been distracted. See attached image.",
+            # TODO change this to the saved photo
+            image_path=filename
+            )
+
             cap.release()
             cv2.destroyAllWindows()
             show_popup()
@@ -120,7 +158,7 @@ while True:
     cv2.putText(annotated_frame, status, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.2, color, 3)
 
 
-        # Show countdown if not studying
+    # Show countdown if not studying
     if countdown is not None:
         timer_text = f"⚠️ Focus in {countdown}s"
         cv2.putText(annotated_frame, timer_text, (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
