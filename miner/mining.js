@@ -4,6 +4,7 @@ const { spawn } = require("child_process");
 
 let minerProcess = null;
 let sessionStartTime = null;
+let culmTxns = null;
 
 function startMining(walletAddress) {
   if (minerProcess) {
@@ -12,6 +13,7 @@ function startMining(walletAddress) {
   }
 
   sessionStartTime = Date.now();
+  culmTxns = 0;
 
   minerProcess = spawn("./xmrig", [
     "-o",
@@ -27,6 +29,13 @@ function startMining(walletAddress) {
   console.log("Miner started");
 
   minerProcess.stdout.on("data", (data) => {
+    const text = data.toString();
+    //regex below matches patterns like (11 tx)
+    const match = text.match(/\((\d+)\s*tx\)/);
+    if (match) {
+      const txnsInBlock = parseInt(match[1]);
+      culmTxns += txnsInBlock;
+    }
     console.log(`[miner] ${data}`);
   });
 
@@ -38,6 +47,7 @@ function startMining(walletAddress) {
     console.log("Miner stopped");
     minerProcess = null;
     sessionStartTime = null;
+    culmTxns = 0;
   });
 }
 
@@ -47,6 +57,7 @@ function stopMining() {
     console.log("Mining stopped via Node");
     minerProcess = null;
     sessionStartTime = null;
+    culmTxns = 0;
   } else {
     console.log("Miner is not running.");
   }
@@ -62,4 +73,13 @@ function getEarningsSoFar() {
   return earningsUsd.toFixed(6);
 }
 
-module.exports = { startMining, stopMining, getEarningsSoFar };
+function getCulmTransactions() {
+  return culmTxns;
+}
+
+module.exports = {
+  startMining,
+  stopMining,
+  getEarningsSoFar,
+  getCulmTransactions,
+};
