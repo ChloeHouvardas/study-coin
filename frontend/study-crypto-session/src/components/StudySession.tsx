@@ -14,6 +14,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
   const [focusStatus, setFocusStatus] = useState<'focused' | 'distracted' | 'analyzing'>('analyzing');
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
+  const [videoReady, setVideoReady] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -33,6 +34,9 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
         
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((e) => {
+            console.error("Auto-play failed:", e);
+          });
         }
       } catch (error) {
         console.error('Permission denied:', error);
@@ -131,12 +135,22 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
               
               <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
                 {cameraPermission === 'granted' ? (
+                <>
                   <video
                     ref={videoRef}
                     autoPlay
                     muted
-                    className="w-full h-full object-cover"
+                    preload="auto"
+                    onCanPlay={() => setVideoReady(true)}
+                    className={`w-full h-full object-cover transition-opacity duration-300 ${videoReady ? "opacity-100" : "opacity-0"}`}
                   />
+
+                  {!videoReady && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted/50 backdrop-blur-sm">
+                      <div className="w-6 h-6 border-2 border-cyber-blue border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </>
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
