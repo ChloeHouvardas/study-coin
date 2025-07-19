@@ -4,13 +4,15 @@ from dotenv import load_dotenv
 import os
 from supabase import create_client
 from auth import requires_auth
+import requests 
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
-
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+active_sessions = {}
+MINING_NODE_URL = "http://localhost:3001"
 # Supabase init
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
 
@@ -94,6 +96,85 @@ def save_user(payload):
     }).execute()
 
     return jsonify({"message": "User saved"}), 201
+
+
+@app.route("/api/start-session", methods=["POST"])
+@requires_auth
+def start_session(payload):
+    auth0_id = payload["sub"]
+
+    # Save session start time in memory
+    start_time = datetime.utcnow().isoformat()
+    active_sessions[auth0_id] = {
+        "start_time": start_time
+    }
+
+    # Start mining via Node
+    try:
+        r = requests.post(f"{MINING_NODE_URL}/start-session")
+        r.raise_for_status()
+    except Exception as e:
+        return jsonify({"error": "Failed to start mining process", "details": str(e)}), 500
+
+    return jsonify({ "message": "Session started" })
+
+
+@app.route("/api/end-session", methods=["POST"])
+@requires_auth
+def end_session(payload):
+    auth0_id = payload["sub"]
+    data = request.get_json()
+    expired = data.get("expired", False)  # fallback to False
+
+    # Get session from memory
+    session_data = active_sessions.pop(auth0_id, None)
+    if not session_data:
+        return jsonify({"error": "No active session found"}), 404
+
+    # Get mining data
+    try:
+        earnings_resp = requests.get(f"{MINING_NODE_URL}/earnings")
+        hashrate_resp = requests.get(f"{MINING_NODE_URL}/hashrate")
+        earnings_resp.raise_for_status()
+        hashrate_resp.raise_for_status()
+        earnings_data = earnings_resp.json()
+        hashrate_data = hashrate_resp.json()
+
+        mined_amount = float(earnings_data.get("estimated_usd", 0))
+        avg_hashrate = float(hashrate_data.get("hashrate_hs", 0))
+
+        try:
+            r = requests.post(f"{MINING_NODE_URL}/end-session")
+            r.raise_for_status()
+        except Exception as e:
+            return jsonify({"error": "Failed to stop mining process", "details": str(e)}), 500
+
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch mining stats", "details": str(e)}), 500
+
+    # Get user ID from Supabase
+    user_resp = supabase.table("users").select("id").eq("auth0_id", auth0_id).execute()
+    if not user_resp.data:
+        return jsonify({"error": "User not found"}), 404
+
+    user_id = user_resp.data[0]["id"]
+
+    # Save session to Supabase
+    result = supabase.table("sessions").insert({
+        "user": user_id,
+        "start_time": session_data["start_time"],
+        "end_time": datetime.utcnow().isoformat(),
+        "mined_amount": mined_amount,
+        "avg_hash_rate": avg_hashrate,
+        "success": expired
+    }).execute()
+    print("Supabase insert result:", result)
+    if not result.data:
+        return jsonify({"error": "Failed to save session"}), 500
+
+    return jsonify({ "message": "Session saved" })
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
