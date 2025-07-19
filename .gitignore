@@ -1,0 +1,5 @@
+.venv
+# for pretrained yolo model
+*.pt
+# Store discord webhook
+.env
