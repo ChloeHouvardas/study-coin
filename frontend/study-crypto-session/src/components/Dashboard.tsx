@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Coins, Clock, Zap, TrendingUp } from "lucide-react";
+import { Coins, Clock, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface DashboardProps {
@@ -15,22 +15,40 @@ export default function Dashboard({ isStudying, sessionStartTime }: DashboardPro
   useEffect(() => {
     if (!isStudying || !sessionStartTime) return;
 
-    const interval = setInterval(() => {
+    const timer = setInterval(() => {
       const now = Date.now();
       const elapsed = Math.floor((now - sessionStartTime.getTime()) / 1000);
       setElapsedTime(elapsed);
-      
-      // Simulate crypto mining - increases based on study time
-      const miningRate = 0.00000001; // BTC per second
-      const newCrypto = elapsed * miningRate;
-      setCryptoMined(newCrypto);
-      
-      // Simulate varying hash rate
-      setHashRate(125.5 + Math.random() * 10);
-    }, 5000); // Update every 5 seconds
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isStudying, sessionStartTime]);
+
+  useEffect(() => {
+    if (!isStudying) return;
+
+    const fetchData = async () => {
+      try {
+        const [earningsRes, hashrateRes] = await Promise.all([
+          fetch("http://localhost:3001/earnings"),
+          fetch("http://localhost:3001/hashrate")
+        ]);
+        
+        const earningsData = await earningsRes.json();
+        const hashrateData = await hashrateRes.json();
+
+        setCryptoMined(parseFloat(earningsData.estimated_usd) || 0);
+        setHashRate(parseFloat(hashrateData.hashrate_hs) || 0);
+      } catch (err) {
+        console.error("Failed to fetch mining data:", err);
+      }
+    };
+
+    const interval = setInterval(fetchData, 3000);
+    fetchData(); // Call immediately as well
 
     return () => clearInterval(interval);
-  }, [isStudying, sessionStartTime]);
+  }, [isStudying]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -56,7 +74,6 @@ export default function Dashboard({ isStudying, sessionStartTime }: DashboardPro
     <div className="fixed top-4 right-4 z-50">
       <Card className="p-4 bg-card/90 backdrop-blur-sm border-border shadow-glow-cyan">
         <div className="space-y-3 min-w-[250px]">
-          {/* Session Time */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-cyber-blue" />
@@ -67,7 +84,6 @@ export default function Dashboard({ isStudying, sessionStartTime }: DashboardPro
             </span>
           </div>
 
-          {/* Crypto Mined */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Coins className="h-4 w-4 text-neon-green animate-pulse" />
@@ -78,7 +94,6 @@ export default function Dashboard({ isStudying, sessionStartTime }: DashboardPro
             </span>
           </div>
 
-          {/* Hash Rate */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-warning-orange" />
@@ -89,7 +104,6 @@ export default function Dashboard({ isStudying, sessionStartTime }: DashboardPro
             </span>
           </div>
 
-          {/* Mining Status */}
           <div className="flex items-center justify-center pt-2 border-t border-border">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
