@@ -29,25 +29,30 @@ const Index = () => {
   const [currentView, setCurrentView] = useState<'dashboard' | 'study'>('dashboard');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'today' | 'week' | 'month' | 'year'>('today');
   const [statsData, setStatsData] = useState<any>(null);
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = await getAccessTokenSilently();
-        const res = await fetch('http://127.0.0.1:5000/api/user-stats', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
-        setStatsData(data);
-        console.log("Fetched stats:", data);
-      } catch (err) {
-        console.error("Failed to fetch stats:", err);
-      }
-    };
+  const [loadingStats, setLoadingStats] = useState(true);
+useEffect(() => {
+  const fetchStats = async () => {
+    setLoadingStats(true); // start loader
+    try {
+      const token = await getAccessTokenSilently();
+      const res = await fetch('http://127.0.0.1:5000/api/user-stats', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      setStatsData(data);
+      console.log("Fetched stats:", data);
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
+    } finally {
+      setLoadingStats(false); // stop loader
+    }
+  };
 
-    if (isAuthenticated) fetchStats();
-  }, [isAuthenticated]);
+  if (isAuthenticated) fetchStats();
+}, [isAuthenticated]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -71,6 +76,26 @@ const Index = () => {
   if (!isAuthenticated) {
     return <LandingPage onLogin={loginWithRedirect} />;
   }
+
+  if (loadingStats) {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-cyber-blue/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-neon-green/5 rounded-full blur-3xl animate-pulse"></div>
+      </div>
+      
+      <div className="text-center relative z-10">
+        <div className="w-16 h-16 border-4 border-neon-green border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+        <div className="text-2xl font-bold mb-2 text-transparent bg-gradient-to-r from-neon-green to-cyber-blue bg-clip-text">
+          Fetching Stats...
+        </div>
+        <p className="text-foreground/60">Loading your mining dashboard</p>
+      </div>
+    </div>
+  );
+}
+
 
   if (currentView === 'study') {
     return <StudySession onEndSession={() => setCurrentView('dashboard')} />;
@@ -168,7 +193,7 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
       {/* Dashboard */}
       <div className="relative z-10 max-w-7xl mx-auto p-6">
         {/* Welcome Section */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-5">
           <h2 className="text-5xl md:text-6xl font-bold mb-4 text-transparent bg-gradient-to-r from-cyber-blue via-neon-green to-cyber-blue bg-clip-text">
             Welcome Back, {user?.given_name || 'Miner'}!
           </h2>
@@ -177,8 +202,29 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
           </p>
         </div>
 
+        <div className="text-center mb-6">
+          <Button 
+            size="lg" 
+            onClick={() => setCurrentView('study')}
+            className="bg-gradient-to-r from-cyber-blue to-neon-green text-black font-bold px-12 py-6 rounded-lg hover:shadow-glow-cyan transition-all duration-300 hover:scale-105 text-xl"
+          >
+            <Play className="h-6 w-6 mr-3" />
+            Initialize Mining Session
+          </Button>
+          <div className="flex items-center justify-center gap-4 mt-6">
+            <div className="flex items-center gap-2 text-sm text-foreground/60">
+              <Star className="h-4 w-4 text-neon-green fill-current" />
+              <span>Neural AI Ready</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-foreground/60">
+              <Zap className="h-4 w-4 text-cyber-blue" />
+              <span>Mining Pool Active</span>
+            </div>
+          </div>
+        </div>
+
         {/* Timeframe Selector */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-5">
           <div className="flex gap-2 p-1 rounded-lg border border-cyber-blue/20 bg-card/50 backdrop-blur-sm">
             {(['today', 'week', 'month', 'year'] as const).map((timeframe) => (
               <Button
@@ -198,7 +244,7 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
         </div>
 
         {/* Main Stats Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Study Time */}
           <Card className="p-6 bg-card/50 border-2 border-cyber-blue/20 hover:border-cyber-blue/40 transition-all duration-300 hover:shadow-glow-cyan backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
@@ -256,7 +302,7 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid lg:grid-cols-3 gap-8">
           {/* Advanced Stats */}
           {/* <div className="lg:col-span-2">
             <Card className="p-6 bg-card/50 border-2 border-cyber-blue/20 backdrop-blur-sm">
@@ -302,7 +348,7 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
         </div>
 
         {/* Friends Section */}
-        <Card className="p-6 mb-8 bg-card/50 border-2 border-cyber-blue/20 backdrop-blur-sm">
+        <Card className="p-6 mt-4 bg-card/50 border-2 border-cyber-blue/20 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-cyber-blue">Mining Network</h3>
             <Users className="h-6 w-6 text-cyber-blue" />
@@ -325,26 +371,7 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
         </Card>
 
         {/* Start Session Button */}
-        <div className="text-center">
-          <Button 
-            size="lg" 
-            onClick={() => setCurrentView('study')}
-            className="bg-gradient-to-r from-cyber-blue to-neon-green text-black font-bold px-12 py-6 rounded-lg hover:shadow-glow-cyan transition-all duration-300 hover:scale-105 text-xl"
-          >
-            <Play className="h-6 w-6 mr-3" />
-            Initialize Mining Session
-          </Button>
-          <div className="flex items-center justify-center gap-4 mt-6">
-            <div className="flex items-center gap-2 text-sm text-foreground/60">
-              <Star className="h-4 w-4 text-neon-green fill-current" />
-              <span>Neural AI Ready</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-foreground/60">
-              <Zap className="h-4 w-4 text-cyber-blue" />
-              <span>Mining Pool Active</span>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );
