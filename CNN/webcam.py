@@ -20,7 +20,7 @@ while True:
     detected_labels = [model.model.names[int(cls)] for cls in results.boxes.cls]
 
     # studying = "person" in detected_labels and ("laptop" in detected_labels or "book" in detected_labels) and "cell phone" not in detected_labels
-    studying = "person" in detected_labels # and ("laptop" in detected_labels or "book" in detected_labels) and "cell phone" not in detected_labels
+    studying = "person" in detected_labels and "cell phone" not in detected_labels# and ("laptop" in detected_labels or "book" in detected_labels) and "cell phone" not in detected_labels
     status = "Studying" if studying else "Not Studying"
 
     annotated_frame = results.plot()
