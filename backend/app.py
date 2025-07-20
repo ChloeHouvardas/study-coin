@@ -5,6 +5,7 @@ import os
 from supabase import create_client
 from auth import requires_auth
 import requests 
+from datetime import datetime, timezone
 
 # Load environment variables
 load_dotenv()
@@ -63,7 +64,7 @@ def user_stats(payload):
         return jsonify({"error": "User not found"}), 404
 
     user_id = user_response.data[0]["id"]
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     stats = {
         "today": get_user_stats(user_id, now.replace(hour=0, minute=0, second=0, microsecond=0), now),
@@ -104,7 +105,7 @@ def start_session(payload):
     auth0_id = payload["sub"]
 
     # Save session start time in memory
-    start_time = datetime.utcnow().isoformat()
+    start_time = datetime.now(timezone.utc).isoformat()
     active_sessions[auth0_id] = {
         "start_time": start_time
     }
@@ -163,7 +164,7 @@ def end_session(payload):
     result = supabase.table("sessions").insert({
         "user": user_id,
         "start_time": session_data["start_time"],
-        "end_time": datetime.utcnow().isoformat(),
+        "end_time": datetime.now(timezone.utc).isoformat(),
         "mined_amount": mined_amount,
         "avg_hash_rate": avg_hashrate,
         "success": expired
@@ -209,6 +210,48 @@ def update_wallet(payload):
     return jsonify({"message": "Wallet updated"})
 
 
+@app.route("/api/withdraw-funds", methods=["POST"])
+@requires_auth
+def withdraw_funds(payload):
+    auth0_id = payload["sub"]
+    data = request.get_json()
+    amount = data.get("amount")
+    wallet = data.get("wallet")
+    
+    if not amount or amount <= 0:
+        return jsonify({"error": "Invalid withdrawal amount"}), 400
+        
+    if not wallet:
+        return jsonify({"error": "No wallet address provided"}), 400
+    
+    # Get current user balance
+    user_resp = supabase.table("users").select("id, amount").eq("auth0_id", auth0_id).execute()
+    
+    if not user_resp.data:
+        return jsonify({"error": "User not found"}), 404
+        
+    user_data = user_resp.data[0]
+    user_id = user_data["id"]
+    current_balance = user_data.get("amount", 0) or 0
+    
+    if amount > current_balance:
+        return jsonify({"error": "Insufficient funds"}), 400
+    
+    # Calculate new balance
+    new_balance = current_balance - amount
+    
+    # Update user balance
+    update_resp = supabase.table("users").update({"amount": new_balance}).eq("id", user_id).execute()
+    
+    if not update_resp.data:
+        return jsonify({"error": "Failed to process withdrawal"}), 500
+    
+    return jsonify({
+        "success": True,
+        "previousBalance": current_balance,
+        "withdrawnAmount": amount,
+        "newBalance": new_balance
+    })
 
 if __name__ == "__main__":
     app.run(debug=True)
