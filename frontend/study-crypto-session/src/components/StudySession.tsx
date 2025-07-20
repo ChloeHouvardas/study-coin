@@ -15,6 +15,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
   const [sessionDuration, setSessionDuration] = useState(60);
+  const [sessionTimeLeft, setSessionTimeLeft] = useState<number>(0);
   const [cpuPercentage, setCpuPercentage] = useState(50);
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [accessToken, setAccessToken] = useState("");
@@ -23,7 +24,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
   const [distractionCountdown, setDistractionCountdown] = useState<number | null>(null);
   const [sessionFailed, setSessionFailed] = useState<null | number>(null);
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
-
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -56,9 +57,9 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
 
         if (!data.studying) {
           if (distractionCountdown === null) {
-            setDistractionCountdown(10); // seconds
+            setDistractionCountdown(10);
           } else if (distractionCountdown === 1) {
-            endSession(true); // auto-end due to distraction
+            endSession(true);
           } else {
             setDistractionCountdown(prev => (prev !== null ? prev - 1 : null));
           }
@@ -74,6 +75,23 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
 
     return () => clearInterval(interval);
   }, [isRecording, distractionCountdown]);
+
+  useEffect(() => {
+    if (!isRecording || sessionTimeLeft <= 0) return;
+
+    const countdown = setInterval(() => {
+      setSessionTimeLeft(prev => {
+        if (prev === 1) {
+          clearInterval(countdown);
+          setShowSuccessPopup(true);
+          endSession(false); // trigger success session end
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(countdown);
+  }, [isRecording, sessionTimeLeft]);
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -124,11 +142,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
     setIsRecording(true);
     const start = new Date();
     setSessionStartTime(start);
-
-    timeoutRef.current = setTimeout(() => {
-      console.log("Session expired – auto-ending.");
-      endSession(true); // mark as expired
-    }, sessionDuration * 60 * 1000);
+    setSessionTimeLeft(sessionDuration * 60);
   };
 
   const endSession = async (expired = false) => {
@@ -151,13 +165,12 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
       });
 
       const result = await res.json();
-      if (expired && result.minedAmount !== undefined) {
+      if (result.minedAmount !== undefined) {
         setSessionFailed(result.minedAmount);
         if (result.screenshot) {
           setScreenshotUrl(`http://localhost:5000/photos/${result.screenshot}`);
         }
       }
-
     } catch (err) {
       console.error('Failed to end session:', err);
     }
@@ -166,7 +179,6 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
     setSessionStartTime(null);
     setDistractionCountdown(null);
     setIsDistracted(false);
-    // onEndSession();
   };
 
   return (
@@ -193,6 +205,15 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
           ) : (
             <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
               {cameraPermission !== "granted" ? "Camera permission required" : "Start a session to begin"}
+            </div>
+          )}
+
+          {isRecording && sessionTimeLeft > 0 && (
+            <div className="absolute bottom-4 left-4 bg-green-600 text-white px-4 py-2 rounded font-mono text-sm shadow-md z-10">
+              ⏳ {Math.floor(sessionTimeLeft / 60)
+                .toString()
+                .padStart(2, "0")}:
+              {(sessionTimeLeft % 60).toString().padStart(2, "0")}
             </div>
           )}
 
@@ -224,6 +245,14 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
             </div>
           )}
 
+          {showSuccessPopup && (
+            <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+              <div className="text-center text-white px-4 space-y-4">
+                <h2 className="text-3xl font-bold">🎉 Session Complete!</h2>
+                <p className="text-lg">Congrats! Funds are ready to deposit.</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 mb-6">
