@@ -4,9 +4,14 @@ import cv2
 import requests
 import tkinter as tk
 from tkinter import messagebox
+from dotenv import load_dotenv
+load_dotenv()
 
 class EvidenceCapture:
-    def __init__(self, webhook_url: str, photo_folder: str = "CNN/photos"):
+    def __init__(self, webhook_url: str = None, photo_folder: str = "CNN/photos"):
+        if webhook_url is None:
+            webhook_url = os.getenv("DISCORD_WEBHOOK")
+        
         self.webhook_url = webhook_url
         self.photo_folder = photo_folder
 

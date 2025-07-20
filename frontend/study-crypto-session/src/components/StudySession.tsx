@@ -21,6 +21,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isDistracted, setIsDistracted] = useState(false);
   const [distractionCountdown, setDistractionCountdown] = useState<number | null>(null);
+  const [sessionFailed, setSessionFailed] = useState<null | number>(null);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -55,7 +56,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
           if (distractionCountdown === null) {
             setDistractionCountdown(10); // seconds
           } else if (distractionCountdown === 1) {
-            endSession(true); // auto-end
+            endSession(true); // auto-end due to distraction
           } else {
             setDistractionCountdown(prev => (prev !== null ? prev - 1 : null));
           }
@@ -135,7 +136,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
     }
 
     try {
-      await fetch("http://127.0.0.1:5000/api/end-session", {
+      const res = await fetch("http://127.0.0.1:5000/api/end-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -146,6 +147,11 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
           startTime: sessionStartTime?.toISOString(),
         }),
       });
+
+      const result = await res.json();
+      if (expired && result.minedAmount !== undefined) {
+        setSessionFailed(result.minedAmount);
+      }
     } catch (err) {
       console.error('Failed to end session:', err);
     }
@@ -187,6 +193,17 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
           {isDistracted && distractionCountdown !== null && (
             <div className="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded shadow-lg text-lg font-bold z-10">
               ⚠️ Focus lost — ending in {distractionCountdown}s
+            </div>
+          )}
+
+          {sessionFailed !== null && (
+            <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+              <div className="text-center text-white">
+                <h2 className="text-3xl font-bold mb-4">❌ SESSION FAILED</h2>
+                <p className="text-lg">
+                  You lost out on <span className="font-semibold">{sessionFailed.toFixed(6)} coins</span>.
+                </p>
+              </div>
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import requests
+import traceback
 
 # Fix Python path so we can import from CNN/project
 sys.path.append(os.path.join(os.path.dirname(__file__), "CNN", "project"))
@@ -126,58 +127,79 @@ def start_session(payload):
 @app.route("/api/end-session", methods=["POST"])
 @requires_auth
 def end_session(payload):
-    auth0_id = payload["sub"]
-    data = request.get_json()
-    expired = data.get("expired", False)
-
-    session_data = active_sessions.pop(auth0_id, None)
-    if not session_data:
-        return jsonify({"error": "No active session found"}), 404
-
     try:
-        earnings_resp = requests.get(f"{MINING_NODE_URL}/earnings")
-        hashrate_resp = requests.get(f"{MINING_NODE_URL}/hashrate")
-        earnings_resp.raise_for_status()
-        hashrate_resp.raise_for_status()
+        auth0_id = payload["sub"]
+        data = request.get_json()
+        expired = data.get("expired", False)
 
-        mined_amount = float(earnings_resp.json().get("estimated_usd", 0))
-        avg_hashrate = float(hashrate_resp.json().get("hashrate_hs", 0))
+        session_data = active_sessions.pop(auth0_id, None)
+        if not session_data:
+            return jsonify({"error": "No active session found"}), 404
 
         try:
-            r = requests.post(f"{MINING_NODE_URL}/end-session")
-            r.raise_for_status()
+            # earnings_resp = requests.get(f"{MINING_NODE_URL}/earnings")
+            # hashrate_resp = requests.get(f"{MINING_NODE_URL}/hashrate")
+            # earnings_resp.raise_for_status()
+            # hashrate_resp.raise_for_status()
+
+            # mined_amount = float(earnings_resp.json().get("estimated_usd", 0))
+            # avg_hashrate = float(hashrate_resp.json().get("hashrate_hs", 0))
+
+            # TODO UNCOMMENT LATER DONT WORK FOR ME ON WINDOWS
+            mined_amount = 0.0009  # pretend user mined 0.0009 coins
+            avg_hashrate = 123.45  # pretend average hash rate
+
+            # try:
+            #     r = requests.post(f"{MINING_NODE_URL}/end-session")
+            #     r.raise_for_status()
+            # except Exception as e:
+            #     return jsonify({"error": "Failed to stop mining", "details": str(e)}), 500
+
         except Exception as e:
-            return jsonify({"error": "Failed to stop mining", "details": str(e)}), 500
+            return jsonify({"error": "Failed to fetch mining stats", "details": str(e)}), 500
+
+        # user_resp = supabase.table("users").select("id", "amount").eq("auth0_id", auth0_id).execute()
+        # if not user_resp.data:
+        #     return jsonify({"error": "User not found"}), 404
+
+        # user_data = user_resp.data[0]
+        # user_id = user_data["id"]
+        # before_amount = user_data.get("amount", 0) or 0
+
+        # result = supabase.table("sessions").insert({
+        #     "user": user_id,
+        #     "start_time": session_data["start_time"],
+        #     "end_time": datetime.utcnow().isoformat(),
+        #     "mined_amount": mined_amount,
+        #     "avg_hash_rate": avg_hashrate,
+        #     "success": expired
+        # }).execute()
+
+        # if not result.data:
+        #     return jsonify({
+        #         "error": "Failed to save session to database"
+        #     }), 500
+
+        if expired:
+            # new_amount = before_amount + mined_amount
+            # supabase.table("users").update({"amount": new_amount}).eq("id", user_id).execute()
+            # print(f"💰 Updated user {user_id}: before = {before_amount:.4f}, mined = {mined_amount:.4f}, after = {new_amount:.4f}")
+
+            # 📸 Trigger Discord photo alert
+            frame = monitor_app.get_current_frame()
+            if frame is not None:
+                photo_path = monitor_app.capture.take_photo(frame)
+                monitor_app.capture.send_to_discord("🚨 Session failed due to distraction.", photo_path)
+
+        return jsonify({
+            "message": "Session saved",
+            "expired": expired,
+            "minedAmount": mined_amount
+        })
 
     except Exception as e:
-        return jsonify({"error": "Failed to fetch mining stats", "details": str(e)}), 500
-
-    user_resp = supabase.table("users").select("id", "amount").eq("auth0_id", auth0_id).execute()
-    if not user_resp.data:
-        return jsonify({"error": "User not found"}), 404
-
-    user_data = user_resp.data[0]
-    user_id = user_data["id"]
-    before_amount = user_data.get("amount", 0) or 0
-
-    result = supabase.table("sessions").insert({
-        "user": user_id,
-        "start_time": session_data["start_time"],
-        "end_time": datetime.utcnow().isoformat(),
-        "mined_amount": mined_amount,
-        "avg_hash_rate": avg_hashrate,
-        "success": expired
-    }).execute()
-
-    if not result.data:
-        return jsonify({"error": "Failed to save session"}), 500
-
-    if expired:
-        new_amount = before_amount + mined_amount
-        supabase.table("users").update({"amount": new_amount}).eq("id", user_id).execute()
-        print(f"💰 User {user_id} updated: {before_amount:.4f} → {new_amount:.4f}")
-
-    return jsonify({ "message": "Session saved" })
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 @app.route("/api/wallet-info", methods=["GET"])
 @requires_auth
@@ -217,11 +239,17 @@ def video_feed():
 
 @app.route("/focus-status")
 def focus_status():
-    frame = monitor_app.get_current_frame()
-    if frame is None:
-        return jsonify({"error": "No frame"}), 500
-    studying, _ = monitor_app.analyzer.analyze(frame)
-    return jsonify({"studying": studying})
+    try:
+        frame = monitor_app.get_current_frame()
+        if frame is None:
+            print("⚠️ Warning: No webcam frame available.")
+            return jsonify({"error": "No webcam frame available"}), 500
+
+        studying, _ = monitor_app.analyzer.analyze(frame)
+        return jsonify({"studying": studying})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": "Failed to analyze frame", "details": str(e)}), 500
 
 # ------------------
 
