@@ -36,6 +36,13 @@ class StudyMonitorApp:
                 b'--frame\r\n'
                 b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n'
             )
+    
+    def get_current_frame(self):
+        ret, frame = self.cap.read()
+        if not ret:
+            return None
+        return cv2.flip(frame, 1)
+
 
     def run(self) -> None:
         while True:

@@ -19,6 +19,8 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [accessToken, setAccessToken] = useState("");
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isDistracted, setIsDistracted] = useState(false);
+  const [distractionCountdown, setDistractionCountdown] = useState<number | null>(null);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -40,6 +42,35 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
 
     requestPermissions();
   }, []);
+
+  useEffect(() => {
+    if (!isRecording) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("http://localhost:5000/focus-status");
+        const data = await res.json();
+
+        if (!data.studying) {
+          if (distractionCountdown === null) {
+            setDistractionCountdown(10); // seconds
+          } else if (distractionCountdown === 1) {
+            endSession(true); // auto-end
+          } else {
+            setDistractionCountdown(prev => (prev !== null ? prev - 1 : null));
+          }
+          setIsDistracted(true);
+        } else {
+          setDistractionCountdown(null);
+          setIsDistracted(false);
+        }
+      } catch (err) {
+        console.error("Focus check failed", err);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRecording, distractionCountdown]);
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -121,6 +152,8 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
 
     setIsRecording(false);
     setSessionStartTime(null);
+    setDistractionCountdown(null);
+    setIsDistracted(false);
     onEndSession();
   };
 
@@ -138,7 +171,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
           </p>
         </div>
 
-        <div className={`transition-all duration-500 ${isRecording ? 'h-[600px]' : 'h-[320px]'} rounded-xl overflow-hidden mb-6`}>
+        <div className={`relative transition-all duration-500 ${isRecording ? 'h-[600px]' : 'h-[320px]'} rounded-xl overflow-hidden mb-6`}>
           {isRecording && cameraPermission === "granted" ? (
             <img
               src="http://localhost:5000/video_feed"
@@ -148,6 +181,12 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
           ) : (
             <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
               {cameraPermission !== "granted" ? "Camera permission required" : "Start a session to begin"}
+            </div>
+          )}
+
+          {isDistracted && distractionCountdown !== null && (
+            <div className="absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded shadow-lg text-lg font-bold z-10">
+              ⚠️ Focus lost — ending in {distractionCountdown}s
             </div>
           )}
         </div>

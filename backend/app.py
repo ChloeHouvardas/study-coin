@@ -1,29 +1,34 @@
-from flask import Flask, request, jsonify
+import os
+import sys
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
-import os
-from supabase import create_client
-from auth import requires_auth
-import requests
-from flask import Response
 from datetime import datetime, timedelta
-import sys
+import requests
+
+# Fix Python path so we can import from CNN/project
 sys.path.append(os.path.join(os.path.dirname(__file__), "CNN", "project"))
+
+from auth import requires_auth
+from study_analyzer import StudyAnalyzer
+from evidence_capture import EvidenceCapture
+from study_monitor_app import StudyMonitorApp
+from supabase import create_client
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-active_sessions = {}
-MINING_NODE_URL = "http://localhost:3001"
+
 # Supabase init
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
 
+MINING_NODE_URL = "http://localhost:3001"
+active_sessions = {}
+monitor_app = StudyMonitorApp()
 
-from study_analyzer import StudyAnalyzer
-from evidence_capture import EvidenceCapture
-from study_monitor_app import StudyMonitorApp
+# ------------------ Utility ------------------
 
 def get_user_stats(user_id, start_time, end_time):
     response = supabase.table("sessions").select("*")\
@@ -47,7 +52,7 @@ def get_user_stats(user_id, start_time, end_time):
     focus_score = f"{(successful_sessions / total_sessions * 100):.0f}%" if total_sessions else "0%"
     efficiency = f"{(total_mined / (total_study_seconds / 3600)):.1%}" if total_study_seconds else "0%"
 
-    XMR_USD_RATE = 140  # Update to current XMR price or fetch dynamically
+    XMR_USD_RATE = 140  # hardcoded for now
     usd_value = f"${(total_mined / XMR_USD_RATE)}"
 
     return {
@@ -59,13 +64,14 @@ def get_user_stats(user_id, start_time, end_time):
         "efficiency": efficiency
     }
 
+# ------------------ API Routes ------------------
+
 @app.route("/api/user-stats", methods=["GET"])
 @requires_auth
 def user_stats(payload):
     auth0_id = payload["sub"]
-
-    # Fetch user
     user_response = supabase.table("users").select("id").eq("auth0_id", auth0_id).execute()
+
     if not user_response.data:
         return jsonify({"error": "User not found"}), 404
 
@@ -81,8 +87,6 @@ def user_stats(payload):
 
     return jsonify(stats)
 
-
-
 @app.route("/api/save-user", methods=["POST"])
 @requires_auth
 def save_user(payload):
@@ -93,7 +97,6 @@ def save_user(payload):
         return jsonify({"error": "Missing email"}), 400
 
     existing = supabase.table("users").select("*").eq("auth0_id", auth0_id).execute()
-
     if existing.data:
         return jsonify({"message": "User already exists"}), 200
 
@@ -104,29 +107,21 @@ def save_user(payload):
 
     return jsonify({"message": "User saved"}), 201
 
-
 @app.route("/api/start-session", methods=["POST"])
 @requires_auth
 def start_session(payload):
     auth0_id = payload["sub"]
-
-    # Save session start time in memory
     start_time = datetime.utcnow().isoformat()
-    active_sessions[auth0_id] = {
-        "start_time": start_time
-    }
+    active_sessions[auth0_id] = { "start_time": start_time }
 
-    # Start mining via Node
-    # TODO uncomment later
     try:
-        print("Skipping for now cuz doesnt work on my windows machine")
+        print("Skipping mining startup on Windows for now.")
         # r = requests.post(f"{MINING_NODE_URL}/start-session")
         # r.raise_for_status()
     except Exception as e:
-        return jsonify({"error": "Failed to start mining process", "details": str(e)}), 500
+        return jsonify({"error": "Failed to start mining", "details": str(e)}), 500
 
     return jsonify({ "message": "Session started" })
-
 
 @app.route("/api/end-session", methods=["POST"])
 @requires_auth
@@ -144,19 +139,15 @@ def end_session(payload):
         hashrate_resp = requests.get(f"{MINING_NODE_URL}/hashrate")
         earnings_resp.raise_for_status()
         hashrate_resp.raise_for_status()
-        earnings_data = earnings_resp.json()
-        hashrate_data = hashrate_resp.json()
 
-        mined_amount = float(earnings_data.get("estimated_usd", 0))
-        avg_hashrate = float(hashrate_data.get("hashrate_hs", 0))
+        mined_amount = float(earnings_resp.json().get("estimated_usd", 0))
+        avg_hashrate = float(hashrate_resp.json().get("hashrate_hs", 0))
 
         try:
             r = requests.post(f"{MINING_NODE_URL}/end-session")
             r.raise_for_status()
-            print(r.json())
-            print("Session ended successfully")
         except Exception as e:
-            return jsonify({"error": "Failed to stop mining process", "details": str(e)}), 500
+            return jsonify({"error": "Failed to stop mining", "details": str(e)}), 500
 
     except Exception as e:
         return jsonify({"error": "Failed to fetch mining stats", "details": str(e)}), 500
@@ -181,26 +172,22 @@ def end_session(payload):
     if not result.data:
         return jsonify({"error": "Failed to save session"}), 500
 
-    # ✅ Update amount only if session is successful
-    print(expired)
     if expired:
         new_amount = before_amount + mined_amount
-
         supabase.table("users").update({"amount": new_amount}).eq("id", user_id).execute()
-
-        print(f"💰 Updated user {user_id}: before = {before_amount:.4f}, mined = {mined_amount:.4f}, after = {new_amount:.4f}")
+        print(f"💰 User {user_id} updated: {before_amount:.4f} → {new_amount:.4f}")
 
     return jsonify({ "message": "Session saved" })
-
-
 
 @app.route("/api/wallet-info", methods=["GET"])
 @requires_auth
 def get_wallet_info(payload):
     auth0_id = payload["sub"]
     user = supabase.table("users").select("wallet", "amount").eq("auth0_id", auth0_id).execute()
+
     if not user.data:
         return jsonify({"error": "User not found"}), 404
+
     return jsonify({
         "wallet": user.data[0].get("wallet", ""),
         "balance": user.data[0].get("amount", "0.00")
@@ -212,12 +199,14 @@ def update_wallet(payload):
     auth0_id = payload["sub"]
     data = request.get_json()
     wallet = data.get("wallet")
+
     if not wallet:
         return jsonify({"error": "No wallet provided"}), 400
-    supabase.table("users").update({"wallet": wallet}).eq("auth0_id", auth0_id).execute()
-    return jsonify({"message": "Wallet updated"})
 
-monitor_app = StudyMonitorApp()
+    supabase.table("users").update({"wallet": wallet}).eq("auth0_id", auth0_id).execute()
+    return jsonify({"message": "Wallet updated" })
+
+# ------------------ Video + AI Monitoring ------------------
 
 @app.route("/video_feed")
 def video_feed():
@@ -225,6 +214,16 @@ def video_feed():
         monitor_app.generate_stream(),
         mimetype="multipart/x-mixed-replace; boundary=frame"
     )
+
+@app.route("/focus-status")
+def focus_status():
+    frame = monitor_app.get_current_frame()
+    if frame is None:
+        return jsonify({"error": "No frame"}), 500
+    studying, _ = monitor_app.analyzer.analyze(frame)
+    return jsonify({"studying": studying})
+
+# ------------------
 
 if __name__ == "__main__":
     app.run(debug=True)
