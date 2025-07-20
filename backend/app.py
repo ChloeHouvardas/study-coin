@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import requests
 import traceback
+from flask import send_from_directory
 
 # Fix Python path so we can import from CNN/project
 sys.path.append(os.path.join(os.path.dirname(__file__), "CNN", "project"))
@@ -189,17 +190,24 @@ def end_session(payload):
             frame = monitor_app.get_current_frame()
             if frame is not None:
                 photo_path = monitor_app.capture.take_photo(frame)
+                filename = os.path.basename(photo_path)
                 monitor_app.capture.send_to_discord("🚨 Session failed due to distraction.", photo_path)
 
         return jsonify({
             "message": "Session saved",
             "expired": expired,
-            "minedAmount": mined_amount
+            "minedAmount": mined_amount,
+            "screenshot": filename  # <-- new
         })
+
 
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
+@app.route('/photos/<path:filename>')
+def get_photo(filename):
+    return send_from_directory("CNN/photos", filename)
 
 @app.route("/api/wallet-info", methods=["GET"])
 @requires_auth

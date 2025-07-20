@@ -22,6 +22,8 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
   const [isDistracted, setIsDistracted] = useState(false);
   const [distractionCountdown, setDistractionCountdown] = useState<number | null>(null);
   const [sessionFailed, setSessionFailed] = useState<null | number>(null);
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -151,7 +153,11 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
       const result = await res.json();
       if (expired && result.minedAmount !== undefined) {
         setSessionFailed(result.minedAmount);
+        if (result.screenshot) {
+          setScreenshotUrl(`http://localhost:5000/photos/${result.screenshot}`);
+        }
       }
+
     } catch (err) {
       console.error('Failed to end session:', err);
     }
@@ -160,7 +166,7 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
     setSessionStartTime(null);
     setDistractionCountdown(null);
     setIsDistracted(false);
-    onEndSession();
+    // onEndSession();
   };
 
   return (
@@ -197,15 +203,27 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
           )}
 
           {sessionFailed !== null && (
-            <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-              <div className="text-center text-white">
-                <h2 className="text-3xl font-bold mb-4">❌ SESSION FAILED</h2>
+            <div className="absolute inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+              <div className="text-center text-white space-y-4 px-4">
+                <h2 className="text-3xl font-bold">❌ SESSION FAILED</h2>
                 <p className="text-lg">
                   You lost out on <span className="font-semibold">{sessionFailed.toFixed(6)} coins</span>.
                 </p>
+
+                {screenshotUrl && (
+                  <div>
+                    <img
+                      src={screenshotUrl}
+                      alt="Screenshot"
+                      className="max-h-[60vh] max-w-full rounded-lg border-4 border-white shadow-xl mx-auto"
+                    />
+                    <p className="mt-2 italic text-muted">"Caught you slacking off!"</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
+
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 mb-6">
