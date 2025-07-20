@@ -4,12 +4,17 @@ import { useEffect, useState, useRef } from "react";
 import { Square, Play } from "lucide-react";
 import Dashboard from "./Dashboard";
 import { useAuth0 } from "@auth0/auth0-react";
+import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 
 interface StudySessionProps {
   onEndSession: () => void;
+  setCurrentView: (view: "dashboard" | "study") => void;
 }
 
-export default function StudySession({ onEndSession }: StudySessionProps) {
+
+export default function StudySession({ onEndSession, setCurrentView }: StudySessionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
@@ -187,9 +192,16 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
 
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">
+          <h1
+            onClick={() => setCurrentView("dashboard")}
+            className="cursor-pointer text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4 block text-center hover:underline"
+          >
             Study Session
           </h1>
+
+
+
+
           <p className="text-muted-foreground">
             Focus on your studies while our AI monitors your attention and mines crypto.
           </p>

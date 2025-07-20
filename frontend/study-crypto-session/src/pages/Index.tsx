@@ -122,8 +122,14 @@ useEffect(() => {
 
 
   if (currentView === 'study') {
-    return <StudySession onEndSession={() => setCurrentView('dashboard')} />;
+    return (
+      <StudySession
+        onEndSession={() => setCurrentView('dashboard')}
+        setCurrentView={setCurrentView}
+      />
+    );
   }
+
 
 
 const fallbackData = {
