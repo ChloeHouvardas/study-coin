@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js')
 
 const supabaseUrl = 'https://qvlsyciblfnnwcgucega.supabase.co'
-const supabaseKey = 'REDACTED_SUPABASE_KEY'
+const supabaseKey = process.env.SUPABASE_KEY
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
