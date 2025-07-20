@@ -19,6 +19,31 @@ class StudyMonitorApp:
             print("❌ Webcam not accessible")
             exit()
 
+    def generate_stream(self):
+        while True:
+            ret, frame = self.cap.read()
+            if not ret:
+                continue
+
+            frame = cv2.flip(frame, 1)
+            studying, yolo_result = self.analyzer.analyze(frame)
+            annotated = yolo_result.plot()
+
+            _, buffer = cv2.imencode('.jpg', annotated)
+            frame_bytes = buffer.tobytes()
+
+            yield (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n'
+            )
+    
+    def get_current_frame(self):
+        ret, frame = self.cap.read()
+        if not ret:
+            return None
+        return cv2.flip(frame, 1)
+
+
     def run(self) -> None:
         while True:
             ret, frame = self.cap.read()

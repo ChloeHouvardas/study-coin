@@ -1,9 +1,21 @@
-from flask import Flask, request, jsonify
+import os
+import sys
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
-import os
-from supabase import create_client
+from datetime import datetime, timedelta
+import requests
+import traceback
+from flask import send_from_directory
+
+# Fix Python path so we can import from CNN/project
+sys.path.append(os.path.join(os.path.dirname(__file__), "CNN", "project"))
+
 from auth import requires_auth
+from study_analyzer import StudyAnalyzer
+from evidence_capture import EvidenceCapture
+from study_monitor_app import StudyMonitorApp
+from supabase import create_client
 import requests 
 from datetime import datetime, timezone
 
@@ -11,13 +23,16 @@ from datetime import datetime, timezone
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
-active_sessions = {}
-MINING_NODE_URL = "http://localhost:3001"
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
 # Supabase init
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
 
-from datetime import datetime, timedelta
+MINING_NODE_URL = "http://localhost:3001"
+active_sessions = {}
+monitor_app = StudyMonitorApp()
+
+# ------------------ Utility ------------------
 
 def get_user_stats(user_id, start_time, end_time):
     response = supabase.table("sessions").select("*")\
@@ -41,7 +56,7 @@ def get_user_stats(user_id, start_time, end_time):
     focus_score = f"{(successful_sessions / total_sessions * 100):.0f}%" if total_sessions else "0%"
     efficiency = f"{(total_mined / (total_study_seconds / 3600)):.1%}" if total_study_seconds else "0%"
 
-    XMR_USD_RATE = 140  # Update to current XMR price or fetch dynamically
+    XMR_USD_RATE = 140  # hardcoded for now
     usd_value = f"${(total_mined / XMR_USD_RATE)}"
 
     return {
@@ -53,13 +68,14 @@ def get_user_stats(user_id, start_time, end_time):
         "efficiency": efficiency
     }
 
+# ------------------ API Routes ------------------
+
 @app.route("/api/user-stats", methods=["GET"])
 @requires_auth
 def user_stats(payload):
     auth0_id = payload["sub"]
-
-    # Fetch user
     user_response = supabase.table("users").select("id").eq("auth0_id", auth0_id).execute()
+
     if not user_response.data:
         return jsonify({"error": "User not found"}), 404
 
@@ -75,8 +91,6 @@ def user_stats(payload):
 
     return jsonify(stats)
 
-
-
 @app.route("/api/save-user", methods=["POST"])
 @requires_auth
 def save_user(payload):
@@ -87,7 +101,6 @@ def save_user(payload):
         return jsonify({"error": "Missing email"}), 400
 
     existing = supabase.table("users").select("*").eq("auth0_id", auth0_id).execute()
-
     if existing.data:
         return jsonify({"message": "User already exists"}), 200
 
@@ -97,7 +110,6 @@ def save_user(payload):
     }).execute()
 
     return jsonify({"message": "User saved"}), 201
-
 
 @app.route("/api/start-session", methods=["POST"])
 @requires_auth
@@ -110,89 +122,125 @@ def start_session(payload):
         "start_time": start_time
     }
 
-    # Start mining via Node
     try:
-        r = requests.post(f"{MINING_NODE_URL}/start-session")
-        r.raise_for_status()
+        print("Skipping mining startup on Windows for now.")
+        # r = requests.post(f"{MINING_NODE_URL}/start-session")
+        # r.raise_for_status()
     except Exception as e:
-        return jsonify({"error": "Failed to start mining process", "details": str(e)}), 500
+        return jsonify({"error": "Failed to start mining", "details": str(e)}), 500
 
     return jsonify({ "message": "Session started" })
-
 
 @app.route("/api/end-session", methods=["POST"])
 @requires_auth
 def end_session(payload):
-    auth0_id = payload["sub"]
-    data = request.get_json()
-    expired = data.get("expired", False)
-
-    session_data = active_sessions.pop(auth0_id, None)
-    if not session_data:
-        return jsonify({"error": "No active session found"}), 404
-
     try:
-        earnings_resp = requests.get(f"{MINING_NODE_URL}/earnings")
-        hashrate_resp = requests.get(f"{MINING_NODE_URL}/hashrate")
-        earnings_resp.raise_for_status()
-        hashrate_resp.raise_for_status()
-        earnings_data = earnings_resp.json()
-        hashrate_data = hashrate_resp.json()
+        auth0_id = payload["sub"]
+        data = request.get_json()
+        expired = data.get("expired", False)
 
-        mined_amount = float(earnings_data.get("estimated_usd", 0))
-        avg_hashrate = float(hashrate_data.get("hashrate_hs", 0))
+        session_data = active_sessions.pop(auth0_id, None)
+        if not session_data:
+            return jsonify({"error": "No active session found"}), 404
 
         try:
-            r = requests.post(f"{MINING_NODE_URL}/end-session")
-            r.raise_for_status()
-            print(r.json())
-            print("Session ended successfully")
+            # earnings_resp = requests.get(f"{MINING_NODE_URL}/earnings")
+            # hashrate_resp = requests.get(f"{MINING_NODE_URL}/hashrate")
+            # earnings_resp.raise_for_status()
+            # hashrate_resp.raise_for_status()
+
+            # When mining is re-enabled:
+            # mined_amount = float(earnings_resp.json().get("estimated_usd", 0))
+            # avg_hashrate = float(hashrate_resp.json().get("hashrate_hs", 0))
+
+            user_data = user_resp.data[0]
+            user_id = user_data["id"]
+            before_amount = user_data.get("amount", 0) or 0
+
+            result = supabase.table("sessions").insert({
+                "user": user_id,
+                "start_time": session_data["start_time"],
+                "end_time": datetime.now(timezone.utc).isoformat(),
+                "mined_amount": mined_amount,
+                "avg_hash_rate": avg_hashrate,
+                "success": expired
+            }).execute()
+
+            if not result.data:
+                return jsonify({"error": "Failed to save session"}), 500
+
+            # TODO UNCOMMENT LATER DONT WORK FOR ME ON WINDOWS
+            mined_amount = 0.0009  # pretend user mined 0.0009 coins
+            avg_hashrate = 123.45  # pretend average hash rate
+
+            # try:
+            #     r = requests.post(f"{MINING_NODE_URL}/end-session")
+            #     r.raise_for_status()
+            # except Exception as e:
+            #     return jsonify({"error": "Failed to stop mining", "details": str(e)}), 500
+
         except Exception as e:
-            return jsonify({"error": "Failed to stop mining process", "details": str(e)}), 500
+            return jsonify({"error": "Failed to fetch mining stats", "details": str(e)}), 500
+
+        # user_resp = supabase.table("users").select("id", "amount").eq("auth0_id", auth0_id).execute()
+        # if not user_resp.data:
+        #     return jsonify({"error": "User not found"}), 404
+
+        # user_data = user_resp.data[0]
+        # user_id = user_data["id"]
+        # before_amount = user_data.get("amount", 0) or 0
+
+        # result = supabase.table("sessions").insert({
+        #     "user": user_id,
+        #     "start_time": session_data["start_time"],
+        #     "end_time": datetime.utcnow().isoformat(),
+        #     "mined_amount": mined_amount,
+        #     "avg_hash_rate": avg_hashrate,
+        #     "success": expired
+        # }).execute()
+
+        # if not result.data:
+        #     return jsonify({
+        #         "error": "Failed to save session to database"
+        #     }), 500
+
+        if expired:
+            # new_amount = before_amount + mined_amount
+            # supabase.table("users").update({"amount": new_amount}).eq("id", user_id).execute()
+            # print(f"💰 Updated user {user_id}: before = {before_amount:.4f}, mined = {mined_amount:.4f}, after = {new_amount:.4f}")
+
+            # 📸 Trigger Discord photo alert
+            frame = monitor_app.get_current_frame()
+            if frame is not None:
+                photo_path = monitor_app.capture.take_photo(frame)
+                filename = os.path.basename(photo_path)
+                monitor_app.capture.send_to_discord("🚨 Session failed due to distraction.", photo_path)
+
+        return jsonify({
+            "message": "Session saved",
+            "expired": expired,
+            "minedAmount": mined_amount,
+            "screenshot": filename  # <-- new
+        })
+
 
     except Exception as e:
-        return jsonify({"error": "Failed to fetch mining stats", "details": str(e)}), 500
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
-    user_resp = supabase.table("users").select("id", "amount").eq("auth0_id", auth0_id).execute()
-    if not user_resp.data:
-        return jsonify({"error": "User not found"}), 404
-
-    user_data = user_resp.data[0]
-    user_id = user_data["id"]
-    before_amount = user_data.get("amount", 0) or 0
-
-    result = supabase.table("sessions").insert({
-        "user": user_id,
-        "start_time": session_data["start_time"],
-        "end_time": datetime.now(timezone.utc).isoformat(),
-        "mined_amount": mined_amount,
-        "avg_hash_rate": avg_hashrate,
-        "success": expired
-    }).execute()
-
-    if not result.data:
-        return jsonify({"error": "Failed to save session"}), 500
-
-    # ✅ Update amount only if session is successful
-    print(expired)
-    if expired:
-        new_amount = before_amount + mined_amount
-
-        supabase.table("users").update({"amount": new_amount}).eq("id", user_id).execute()
-
-        print(f"💰 Updated user {user_id}: before = {before_amount:.4f}, mined = {mined_amount:.4f}, after = {new_amount:.4f}")
-
-    return jsonify({ "message": "Session saved" })
-
-
+@app.route('/photos/<path:filename>')
+def get_photo(filename):
+    return send_from_directory("CNN/photos", filename)
 
 @app.route("/api/wallet-info", methods=["GET"])
 @requires_auth
 def get_wallet_info(payload):
     auth0_id = payload["sub"]
     user = supabase.table("users").select("wallet", "amount").eq("auth0_id", auth0_id).execute()
+
     if not user.data:
         return jsonify({"error": "User not found"}), 404
+
     return jsonify({
         "wallet": user.data[0].get("wallet", ""),
         "balance": user.data[0].get("amount", "0.00")
@@ -204,11 +252,35 @@ def update_wallet(payload):
     auth0_id = payload["sub"]
     data = request.get_json()
     wallet = data.get("wallet")
+
     if not wallet:
         return jsonify({"error": "No wallet provided"}), 400
-    supabase.table("users").update({"wallet": wallet}).eq("auth0_id", auth0_id).execute()
-    return jsonify({"message": "Wallet updated"})
 
+    supabase.table("users").update({"wallet": wallet}).eq("auth0_id", auth0_id).execute()
+    return jsonify({"message": "Wallet updated" })
+
+# ------------------ Video + AI Monitoring ------------------
+
+@app.route("/video_feed")
+def video_feed():
+    return Response(
+        monitor_app.generate_stream(),
+        mimetype="multipart/x-mixed-replace; boundary=frame"
+    )
+
+@app.route("/focus-status")
+def focus_status():
+    try:
+        frame = monitor_app.get_current_frame()
+        if frame is None:
+            print("⚠️ Warning: No webcam frame available.")
+            return jsonify({"error": "No webcam frame available"}), 500
+
+        studying, _ = monitor_app.analyzer.analyze(frame)
+        return jsonify({"studying": studying})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": "Failed to analyze frame", "details": str(e)}), 500
 
 @app.route("/api/withdraw-funds", methods=["POST"])
 @requires_auth
