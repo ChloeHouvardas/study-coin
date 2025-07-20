@@ -4,19 +4,26 @@ from dotenv import load_dotenv
 import os
 from supabase import create_client
 from auth import requires_auth
-import requests 
+import requests
+from flask import Response
+from datetime import datetime, timedelta
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "CNN", "project"))
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 active_sessions = {}
 MINING_NODE_URL = "http://localhost:3001"
 # Supabase init
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
 
-from datetime import datetime, timedelta
+
+from study_analyzer import StudyAnalyzer
+from evidence_capture import EvidenceCapture
+from study_monitor_app import StudyMonitorApp
 
 def get_user_stats(user_id, start_time, end_time):
     response = supabase.table("sessions").select("*")\
@@ -110,9 +117,11 @@ def start_session(payload):
     }
 
     # Start mining via Node
+    # TODO uncomment later
     try:
-        r = requests.post(f"{MINING_NODE_URL}/start-session")
-        r.raise_for_status()
+        print("Skipping for now cuz doesnt work on my windows machine")
+        # r = requests.post(f"{MINING_NODE_URL}/start-session")
+        # r.raise_for_status()
     except Exception as e:
         return jsonify({"error": "Failed to start mining process", "details": str(e)}), 500
 
@@ -208,7 +217,14 @@ def update_wallet(payload):
     supabase.table("users").update({"wallet": wallet}).eq("auth0_id", auth0_id).execute()
     return jsonify({"message": "Wallet updated"})
 
+monitor_app = StudyMonitorApp()
 
+@app.route("/video_feed")
+def video_feed():
+    return Response(
+        monitor_app.generate_stream(),
+        mimetype="multipart/x-mixed-replace; boundary=frame"
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)

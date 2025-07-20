@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useEffect, useState, useRef } from "react";
-import { Camera, Mic, Square, Play, AlertTriangle, CheckCircle } from "lucide-react";
+import { Square, Play } from "lucide-react";
 import Dashboard from "./Dashboard";
 import { useAuth0 } from "@auth0/auth0-react";
 
@@ -12,18 +12,13 @@ interface StudySessionProps {
 export default function StudySession({ onEndSession }: StudySessionProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
-  const [focusStatus, setFocusStatus] = useState<'focused' | 'distracted' | 'analyzing'>('analyzing');
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'pending'>('pending');
-  const [videoReady, setVideoReady] = useState(false);
   const [sessionDuration, setSessionDuration] = useState(60);
   const [cpuPercentage, setCpuPercentage] = useState(50);
   const { getAccessTokenSilently, isAuthenticated } = useAuth0();
   const [accessToken, setAccessToken] = useState("");
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -34,132 +29,100 @@ export default function StudySession({ onEndSession }: StudySessionProps) {
         setCameraPermission(cameraPerm.state as "granted" | "denied" | "prompt");
         setMicPermission(micPerm.state as "granted" | "denied" | "prompt");
 
-        if (cameraPerm.state === "granted" && micPerm.state === "granted") {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-          streamRef.current = stream;
-
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.play().catch(e => console.error("Auto-play failed:", e));
-          }
-        }
-
         cameraPerm.onchange = () => setCameraPermission(cameraPerm.state as any);
         micPerm.onchange = () => setMicPermission(micPerm.state as any);
       } catch (error) {
-        console.error("Permission check or media access failed:", error);
+        console.error("Permission check failed:", error);
         setCameraPermission("denied");
         setMicPermission("denied");
       }
     };
 
     requestPermissions();
-
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-    };
   }, []);
 
   useEffect(() => {
-    if (!isRecording) return;
-    const focusInterval = setInterval(() => {
-      const statuses = ['focused', 'focused', 'focused', 'analyzing', 'distracted'];
-      setFocusStatus(statuses[Math.floor(Math.random() * statuses.length)]);
-    }, 10000);
-    return () => clearInterval(focusInterval);
-  }, [isRecording]);
+    const fetchToken = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        setAccessToken(token);
+      } catch (err) {
+        console.error("Failed to get access token", err);
+      }
+    };
 
-  useEffect(() => {
-  const fetchToken = async () => {
-    try {
-      const token = await getAccessTokenSilently();
-      setAccessToken(token);
-    } catch (err) {
-      console.error("Failed to get access token", err);
+    if (isAuthenticated) {
+      fetchToken();
     }
-  };
+  }, [getAccessTokenSilently, isAuthenticated]);
 
-  if (isAuthenticated) {
-    fetchToken();
-  }
-}, [getAccessTokenSilently, isAuthenticated]);
-
-const startSession = async () => {
-  if (cameraPermission !== 'granted' || micPermission !== 'granted') {
-    alert('Camera and microphone permissions are required.');
-    return;
-  }
-
-  try {
-    const res = await fetch("http://127.0.0.1:5000/api/start-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        cpuPercentage,
-        sessionDuration,
-      }),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      console.error('Failed to start session:', errorData);
-      alert('Failed to start session. Please try again.');
+  const startSession = async () => {
+    if (cameraPermission !== 'granted' || micPermission !== 'granted') {
+      alert('Camera and microphone permissions are required.');
       return;
     }
-  } catch (err) {
-    console.error('Failed to start session:', err);
-    alert('An error occurred while starting the session.');
-    return;
-  }
 
-  setIsRecording(true);
-  const start = new Date();
-  setSessionStartTime(start);
-  setFocusStatus('analyzing');
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/start-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          cpuPercentage,
+          sessionDuration,
+        }),
+      });
 
-  // Automatically end session when timer expires
-  timeoutRef.current = setTimeout(() => {
-    console.log("Session expired – auto-ending.");
-    endSession(true); // mark as expired
-  }, sessionDuration * 60 * 1000); // convert minutes to ms
-};
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Failed to start session:', errorData);
+        alert('Failed to start session. Please try again.');
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to start session:', err);
+      alert('An error occurred while starting the session.');
+      return;
+    }
 
+    setIsRecording(true);
+    const start = new Date();
+    setSessionStartTime(start);
 
-const endSession = async (expired = false) => {
-  if (timeoutRef.current) {
-    clearTimeout(timeoutRef.current);
-    timeoutRef.current = null;
-  }
+    timeoutRef.current = setTimeout(() => {
+      console.log("Session expired – auto-ending.");
+      endSession(true); // mark as expired
+    }, sessionDuration * 60 * 1000);
+  };
 
-  try {
-    await fetch("http://127.0.0.1:5000/api/end-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        expired,
-        startTime: sessionStartTime?.toISOString(),
-      }),
-    });
-  } catch (err) {
-    console.error('Failed to end session:', err);
-  }
+  const endSession = async (expired = false) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
 
-  setIsRecording(false);
-  setSessionStartTime(null);
-  setFocusStatus('analyzing');
-  onEndSession();
-};
+    try {
+      await fetch("http://127.0.0.1:5000/api/end-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          expired,
+          startTime: sessionStartTime?.toISOString(),
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to end session:', err);
+    }
 
-
-
+    setIsRecording(false);
+    setSessionStartTime(null);
+    onEndSession();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-dark p-6 relative">
@@ -175,18 +138,16 @@ const endSession = async (expired = false) => {
           </p>
         </div>
 
-        <div className={`transition-all duration-500 ${isRecording ? 'h-[480px]' : 'h-[320px]'} rounded-xl overflow-hidden mb-6`}>
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            preload="auto"
-            onCanPlay={() => setVideoReady(true)}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${videoReady ? "opacity-100" : "opacity-0"}`}
-          />
-          {!videoReady && (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted/50 backdrop-blur-sm">
-              <div className="w-6 h-6 border-2 border-cyber-blue border-t-transparent rounded-full animate-spin" />
+        <div className={`transition-all duration-500 ${isRecording ? 'h-[600px]' : 'h-[320px]'} rounded-xl overflow-hidden mb-6`}>
+          {isRecording && cameraPermission === "granted" ? (
+            <img
+              src="http://localhost:5000/video_feed"
+              alt="Live study feed"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+              {cameraPermission !== "granted" ? "Camera permission required" : "Start a session to begin"}
             </div>
           )}
         </div>
@@ -221,7 +182,7 @@ const endSession = async (expired = false) => {
 
         <Button
           size="lg"
-          onClick={isRecording ? endSession : startSession}
+          onClick={isRecording ? () => endSession(false) : startSession}
           disabled={cameraPermission !== 'granted' || micPermission !== 'granted'}
           className="w-full"
           variant={isRecording ? 'destructive' : 'default'}
