@@ -391,7 +391,6 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
         {/* Start Session Button */}
 
       </div>
-
       {/* Withdraw Modal */}
       <WithdrawModal 
         isOpen={isWithdrawModalOpen}

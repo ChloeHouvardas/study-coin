@@ -210,7 +210,6 @@ def update_wallet(payload):
     return jsonify({"message": "Wallet updated"})
 
 
-
 @app.route("/api/withdraw-funds", methods=["POST"])
 @requires_auth
 def withdraw_funds(payload):
@@ -253,7 +252,6 @@ def withdraw_funds(payload):
         "withdrawnAmount": amount,
         "newBalance": new_balance
     })
-
 
 if __name__ == "__main__":
     app.run(debug=True)
