@@ -2,6 +2,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { useState, useEffect } from 'react';
 import LandingPage from '@/components/LandingPage';
 import StudySession from '@/components/StudySession';
+import WithdrawModal from '@/components/WithdrawModal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { 
@@ -32,6 +33,7 @@ const Index = () => {
   const [loadingStats, setLoadingStats] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [availableBalance, setAvailableBalance] = useState("0.00");
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchWalletInfo = async () => {
@@ -352,8 +354,9 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
             
             <Button 
               variant="outline"
-              className="border-neon-green/30 text-neon-green hover:bg-neon-green/10 hover:border-neon-green/50 transition-all duration-300"
+              className="border-neon-green/30 text-neon-green hover:bg-neon-green/10 hover:border-neon-green/50 hover:text-white transition-all duration-300"
               disabled={parseFloat(availableBalance) === 0}
+              onClick={() => setIsWithdrawModalOpen(true)}
             >
               <Coins className="h-4 w-4 mr-2" />
               Withdraw Funds
@@ -388,6 +391,38 @@ const currentData = statsData?.[selectedTimeframe] || fallbackData;
         {/* Start Session Button */}
 
       </div>
+
+      {/* Withdraw Modal */}
+      <WithdrawModal 
+        isOpen={isWithdrawModalOpen}
+        onClose={() => setIsWithdrawModalOpen(false)}
+        availableBalance={availableBalance}
+        walletAddress={walletAddress}
+        onWithdrawSuccess={(amount) => {
+          const currentBalance = parseFloat(availableBalance);
+          const newBalance = Math.max(0, currentBalance - amount).toFixed(2);
+          setAvailableBalance(newBalance);
+          
+          setTimeout(() => {
+            const fetchWalletInfo = async () => {
+              try {
+                const token = await getAccessTokenSilently();
+                const res = await fetch('http://127.0.0.1:5000/api/wallet-info', {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                });
+                const data = await res.json();
+                setWalletAddress(data.wallet || "");
+                setAvailableBalance(data.balance || "0.00");
+              } catch (err) {
+                console.error("Failed to fetch wallet info:", err);
+              }
+            };
+            fetchWalletInfo();
+          }, 1000);
+        }}
+      />
     </div>
   );
 };
