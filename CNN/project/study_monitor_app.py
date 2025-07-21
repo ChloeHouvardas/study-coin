@@ -4,7 +4,7 @@ import cv2
 from dotenv import load_dotenv
 from evidence_capture import EvidenceCapture
 from study_analyzer import StudyAnalyzer
-
+import requests
 class StudyMonitorApp:
     def __init__(self):
         load_dotenv()
@@ -12,7 +12,7 @@ class StudyMonitorApp:
         self.capture = EvidenceCapture(self.webhook_url)
         self.analyzer = StudyAnalyzer()
         self.cap = cv2.VideoCapture(0)
-        self.threshold_seconds = 10
+        self.threshold_seconds = 2
         self.not_studying_start = None
 
         if not self.cap.isOpened():
